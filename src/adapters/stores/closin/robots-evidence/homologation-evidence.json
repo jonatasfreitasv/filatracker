@@ -1,0 +1,19 @@
+{
+  "policyVersion": 1,
+  "requestedUrl": "https://www.closin.com.br/robots.txt",
+  "finalUrl": "https://www.closin.com.br/robots.txt",
+  "redirects": [],
+  "userAgentToken": "FilaTrackerBot",
+  "bodyDigestSha256": "37c3b0bb165099c74b5dcbf9875e9c1d27ef0ea91e4a9cd28a11275fd9d9bc94",
+  "capturedAt": "2026-08-08T08:01:50.000Z",
+  "evaluatedPaths": [
+    "/product-page/pla-branco-1kg",
+    "/store-products-sitemap.xml",
+    "/robots.txt"
+  ],
+  "decision": "allow",
+  "matchedRule": null,
+  "mapVersion": 1,
+  "robotsCheckVersion": 1,
+  "note": "Audit evidence only \u2014 production runs must refetch and reevaluate."
+}

@@ -1,0 +1,18 @@
+{
+  "id": "pdp-pla-branco",
+  "sourceUrl": "https://www.closin.com.br/product-page/pla-branco-1kg",
+  "capturedAt": "2026-08-08T08:02:00.000Z",
+  "contentDigestSha256": "84a4403baa72e71e76cf25eed5095edea5cbd1a1e411d009018687ba4d4681f0",
+  "sanitizerMethod": "ldjson-excerpt-strip-images-keep-price-hooks",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "available",
+    "listingPriceCentavos": 8030,
+    "massGrams": 1000,
+    "materialEvidence": "PLA",
+    "colorEvidence": "Branco",
+    "variantSku": "CLO-PLA-01BRA"
+  }
+}

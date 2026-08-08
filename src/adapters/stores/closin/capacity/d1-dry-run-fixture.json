@@ -1,0 +1,35 @@
+{
+  "purpose": "Dry-run inputs for Story 1.3 bounded set-based D1 batch() AD-8 proof",
+  "storeId": "closin",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "generatedAt": "2026-08-08T08:20:00.000Z",
+  "ad8ProofStatus": "pending-story-1-3",
+  "rows": [
+    {
+      "sourceKey": "closin|https://www.closin.com.br/product-page/pla-branco-1kg|CLO-PLA-01BRA",
+      "listingPriceCentavos": 8030,
+      "massGrams": 1000,
+      "availability": "available",
+      "stagedBytesEstimate": 2048
+    },
+    {
+      "sourceKey": "closin|https://www.closin.com.br/product-page/petg-laranja-1kg|CLO-PETG-014LRJ",
+      "listingPriceCentavos": 6670,
+      "massGrams": 1000,
+      "availability": "unavailable",
+      "stagedBytesEstimate": 2048
+    }
+  ],
+  "aggregate": {
+    "rowCount": 2,
+    "statementsEstimate": 6,
+    "stagedBytesEstimate": 4096,
+    "scaledToCatalogBoundWithMargin": {
+      "rowCount": 134,
+      "statementsEstimate": 402,
+      "stagedBytesEstimate": 274432
+    }
+  },
+  "note": "Do not execute against production D1 in Story 1.2. Story 1.3 owns the real batch() proof."
+}

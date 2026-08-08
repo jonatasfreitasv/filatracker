@@ -1,0 +1,17 @@
+{
+  "id": "pdp-petg-laranja-oos",
+  "sourceUrl": "https://www.closin.com.br/product-page/petg-laranja-1kg",
+  "capturedAt": "2026-08-08T08:01:00.000Z",
+  "contentDigestSha256": "ada307d05ba5fd00e279b1981738ce9071702ba373c2938a3077a45dbecc1178",
+  "sanitizerMethod": "ldjson-excerpt-strip-images-keep-price-hooks",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "unavailable",
+    "listingPriceCentavos": 6670,
+    "massGrams": 1000,
+    "materialEvidence": "PETG",
+    "colorEvidence": "Laranja"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "pdp-pla-silk-duo-variant",
+  "sourceUrl": "https://www.closin.com.br/product-page/pla-silk-duo-ouro-e-cobre-1kg",
+  "capturedAt": "2026-08-08T08:16:00.000Z",
+  "sanitizerMethod": "constructed-from-live-slug-closin-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "massGrams": 1000,
+    "variantSku": "CLO-PLA-DUO-OUROCOBRE"
+  },
+  "contentDigestSha256": "492ae0ae8f0ea3bb42c0e0d78830779aa0dcb8dbdfc5f49d06756b0387c5c188"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "pdp-promotion-invalid",
+  "sourceUrl": "https://www.closin.com.br/product-page/abs-cinza-1kg",
+  "capturedAt": "2026-08-08T08:14:00.000Z",
+  "sanitizerMethod": "constructed-price-hooks-from-closin-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "listingPriceCentavos": 9000,
+    "originalPriceCentavos": 7000,
+    "promotion": false
+  },
+  "contentDigestSha256": "27e1972518187ac1e8ed5496381b4804a335a88d518d43c31852e9cf897316f0"
+}

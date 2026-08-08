@@ -1,0 +1,13 @@
+{
+  "id": "pdp-availability-unknown",
+  "sourceUrl": "https://www.closin.com.br/product-page/pla-natural-1kg",
+  "capturedAt": "2026-08-08T08:15:00.000Z",
+  "sanitizerMethod": "constructed-from-closin-ldjson-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "unknown"
+  },
+  "contentDigestSha256": "56e0c907a4fee1ed28d3ef863f7e2de29b9fea25770ce680fcd0d188c08aacfa"
+}

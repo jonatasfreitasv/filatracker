@@ -1,0 +1,36 @@
+{
+  "storeId": "closin",
+  "capturedAt": "2026-08-08T08:01:45.000Z",
+  "method": "GET https://www.closin.com.br/store-products-sitemap.xml ; count <loc> product-page URLs",
+  "evidenceIds": {
+    "sitemap": "catalog-store-products-sitemap-excerpt",
+    "sitemapFullDigestNote": "full sitemap measured live 2026-08-08; excerpt fixture holds first 25 URLs",
+    "robots": "homologation-evidence",
+    "pdpSample": "pdp-pla-branco"
+  },
+  "measuredMaxCatalogVolume": 111,
+  "measuredPdpEncodedBytesApprox": 2039664,
+  "safetyMarginPercent": 20,
+  "catalogBoundWithMargin": 134,
+  "chosenBudgets": {
+    "maxEncodedBytesPerFetch": 3000000,
+    "maxObservationsPerRun": 150,
+    "maxCandidatesPerRun": 200,
+    "maxSubrequestsPerRun": 160,
+    "maxConcurrency": 2,
+    "maxWallClockMs": 60000,
+    "maxStagedBytesEstimate": 2000000
+  },
+  "marginCalculation": "ceil(111 * 1.20) = 134; observation budget 150 > 134; fetch byte budget 3_000_000 > measured ~2.04MB PDP",
+  "dryRunInputsForStory13": {
+    "description": "Deterministic staged-row/statement/byte estimates for bounded set-based D1 batch() proof. Closin activation remains blocked until Story 1.3 AD-8 proof passes.",
+    "ad8ProofStatus": "pending-story-1-3",
+    "maxRowsEstimate": 134,
+    "statementsPerOfferEstimate": 3,
+    "maxStatementsEstimate": 402,
+    "bytesPerRowEstimate": 2048,
+    "maxStagedBytesEstimate": 274432,
+    "fixturePath": "src/adapters/stores/closin/capacity/d1-dry-run-fixture.json"
+  },
+  "workersDnsLimitation": "Cloudflare Workers fetch resolves origin DNS internally; userland cannot pin connections. URL host classification + fail-closed ambiguity are mandatory."
+}

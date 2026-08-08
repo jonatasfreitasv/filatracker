@@ -24,6 +24,14 @@ pnpm run dev
 pnpm run check   # typecheck + lint + test
 ```
 
+## Store maps / homologation
+
+Store declarative maps live under `src/adapters/stores/<store>/`.
+Homologation (fixtures + bounded read-only probe) **precedes** ingestion/publication.
+Closin is the first real adapter and remains **not activated** for publication until Story 1.3 + operator activation.
+
+See [docs/runbooks/store-homologation.md](docs/runbooks/store-homologation.md).
+
 ## Deploy
 
 See [docs/runbooks/deploy.md](docs/runbooks/deploy.md). Deploy **ingest before web**.

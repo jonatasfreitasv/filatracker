@@ -1,0 +1,13 @@
+{
+  "id": "pdp-non-filament-nozzle",
+  "sourceUrl": "https://www.closin.com.br/product-page/bico-nozzle-0-4mm",
+  "capturedAt": "2026-08-08T08:11:00.000Z",
+  "sanitizerMethod": "constructed-negative-closin-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "omission",
+    "code": "non_filament"
+  },
+  "contentDigestSha256": "a79e3a6396e2f7b00b354cd941058fe4172005a512ce6ce97273b84bf90fd4e1"
+}

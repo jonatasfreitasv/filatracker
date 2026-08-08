@@ -1,0 +1,15 @@
+{
+  "id": "pdp-kit-ambiguous-mass",
+  "sourceUrl": "https://www.closin.com.br/product-page/kit-5-cores-pla",
+  "capturedAt": "2026-08-08T08:12:00.000Z",
+  "sanitizerMethod": "constructed-from-closin-ldjson-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "available",
+    "massGrams": null,
+    "retainObservation": true
+  },
+  "contentDigestSha256": "fb02fa6e2bba10c783ef24055dfa5b0cee7745a7a0648ee2ac741460ea02cdf3"
+}

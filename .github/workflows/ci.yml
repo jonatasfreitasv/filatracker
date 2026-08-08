@@ -41,3 +41,14 @@ jobs:
 
       - name: Binding denial inventory (explicit gate)
         run: pnpm exec vitest run tests/unit/contracts-and-bindings.test.ts --project unit
+
+      - name: Homologation gates (fixtures, robots, destination, budgets, imports)
+        run: >
+          pnpm exec vitest run --project unit
+          tests/unit/store-contracts.test.ts
+          tests/unit/source-identity.test.ts
+          tests/unit/destination-policy.test.ts
+          tests/unit/robots-policy.test.ts
+          tests/unit/closin-fixtures.test.ts
+          tests/unit/closin-budgets.test.ts
+          tests/unit/store-binding-and-imports.test.ts

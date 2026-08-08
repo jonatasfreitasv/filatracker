@@ -1,0 +1,15 @@
+{
+  "id": "pdp-malformed-price",
+  "sourceUrl": "https://www.closin.com.br/product-page/petg-malformed",
+  "capturedAt": "2026-08-08T08:10:00.000Z",
+  "sanitizerMethod": "constructed-from-closin-ldjson-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "available",
+    "listingPriceCentavos": null,
+    "massGrams": null
+  },
+  "contentDigestSha256": "71c44b7b8874089a555fdc2f582b36d81aec906d599693b7e0147d28f8017057"
+}

@@ -19,6 +19,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:homologation": "vitest run --project unit tests/unit/store-contracts.test.ts tests/unit/source-identity.test.ts tests/unit/destination-policy.test.ts tests/unit/robots-policy.test.ts tests/unit/closin-fixtures.test.ts tests/unit/closin-budgets.test.ts tests/unit/store-binding-and-imports.test.ts",
+    "probe:closin": "CLOSIN_PROBE=1 vitest run --project unit tests/unit/closin-probe.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply filatracker-local --local -c wrangler.ingest.jsonc",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run test"

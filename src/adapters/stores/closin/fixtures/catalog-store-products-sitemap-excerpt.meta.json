@@ -1,0 +1,14 @@
+{
+  "id": "catalog-store-products-sitemap-excerpt",
+  "sourceUrl": "https://www.closin.com.br/store-products-sitemap.xml",
+  "capturedAt": "2026-08-08T08:01:45.000Z",
+  "contentDigestSha256": "0309bbb2c0d51fee0fbe29b5724aecfe2f2195c385524271bb4dddb067a07e56",
+  "sanitizerMethod": "first-25-locs-from-live-sitemap",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "discovery",
+    "urlCount": 25
+  },
+  "fullCatalogMeasuredCount": 111
+}

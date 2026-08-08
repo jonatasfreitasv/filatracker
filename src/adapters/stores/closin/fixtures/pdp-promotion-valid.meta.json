@@ -1,0 +1,15 @@
+{
+  "id": "pdp-promotion-valid",
+  "sourceUrl": "https://www.closin.com.br/product-page/abs-preto-1kg",
+  "capturedAt": "2026-08-08T08:13:00.000Z",
+  "sanitizerMethod": "constructed-price-hooks-from-closin-shape",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "observation",
+    "listingPriceCentavos": 7000,
+    "originalPriceCentavos": 9000,
+    "promotion": true
+  },
+  "contentDigestSha256": "d1084418625ec7c137865081e27f559d11a178544a3186208c2cf7206b219063"
+}
