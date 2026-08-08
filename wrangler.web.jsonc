@@ -1,0 +1,34 @@
+/**
+ * Public web Worker — SSR only.
+ * Never bind D1, queues, schedules, Store secrets, or migration authority.
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "filatracker-web",
+	"compatibility_date": "2026-08-08",
+	"main": "./workers/app.ts",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./build/client"
+	},
+	"vars": {
+		"PUBLIC_APP_NAME": "FilaTracker",
+		"RPC_RETRY_AFTER_SECONDS": "5"
+	},
+	/**
+	 * RPC_CAPABILITY_SECRET is provided via encrypted secrets / .dev.vars — never committed.
+	 * Local: see .dev.vars.example
+	 */
+	"services": [
+		{
+			"binding": "INGEST",
+			"service": "filatracker-ingest",
+			"entrypoint": "IngestService"
+		}
+	]
+}

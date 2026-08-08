@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development (never commit .dev.vars).
+# Deployment-scoped capability secret — required on web for command methods
+# (Story 1.1 provisions the boundary; command verification arrives with later stories).
+RPC_CAPABILITY_SECRET=local-dev-capability-secret-not-for-production

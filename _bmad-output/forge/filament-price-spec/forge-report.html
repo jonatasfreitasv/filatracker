@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Forge Report — Filament Price Spec</title>
+  <style>
+    :root {
+      --ink: #1a1714;
+      --paper: #f3efe6;
+      --rule: #c9bfa8;
+      --muted: #5c554a;
+      --seal: #7a1f1f;
+      --seal-deep: #4a1010;
+      --gold: #c4a35a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      background:
+        radial-gradient(ellipse at 20% 0%, #ebe4d4 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 100%, #e0d6c4 0%, transparent 45%),
+        var(--paper);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .sheet {
+      max-width: 720px;
+      margin: 2.5rem auto;
+      padding: 2.5rem 2rem 3rem;
+      border: 1px solid var(--rule);
+      background: rgba(255, 252, 245, 0.85);
+      position: relative;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1.5rem;
+      align-items: start;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    h1 {
+      font-size: 1.65rem;
+      margin: 0 0 0.35rem;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+    .meta { color: var(--muted); font-size: 0.95rem; margin: 0; }
+    .seal {
+      width: 132px;
+      height: 132px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 6px rgba(74, 16, 16, 0.35));
+    }
+    h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin: 1.75rem 0 0.6rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.25rem;
+    }
+    ul { margin: 0.4rem 0 0; padding-left: 1.15rem; }
+    li { margin: 0.35rem 0; }
+    .outcome {
+      font-size: 1.15rem;
+      margin: 0 0 0.5rem;
+    }
+    .personas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .persona {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid var(--rule);
+      padding: 0.25rem 0.55rem;
+      font-size: 0.9rem;
+      background: #fffaf0;
+    }
+    .weak { color: var(--muted); }
+    footer {
+      margin-top: 2.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.88em; }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <header>
+      <div>
+        <h1>Forge Report</h1>
+        <p class="meta">Filament Price — raw_plan pressure-test</p>
+        <p class="meta">Jon · 2026-08-07 · filament-price-spec</p>
+      </div>
+      <svg class="seal" viewBox="0 0 132 132" xmlns="http://www.w3.org/2000/svg" aria-label="HARDENED">
+        <defs>
+          <radialGradient id="wax" cx="40%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="#a32d2d"/>
+            <stop offset="55%" stop-color="#7a1f1f"/>
+            <stop offset="100%" stop-color="#4a1010"/>
+          </radialGradient>
+        </defs>
+        <circle cx="66" cy="66" r="62" fill="url(#wax)" stroke="#c4a35a" stroke-width="3"/>
+        <circle cx="66" cy="66" r="52" fill="none" stroke="#c4a35a" stroke-width="1.2" opacity="0.85"/>
+        <text x="66" y="62" text-anchor="middle" fill="#f3efe6" font-family="Georgia, serif" font-size="13" font-weight="700" letter-spacing="2">HARDENED</text>
+        <text x="66" y="80" text-anchor="middle" fill="#e8d5a3" font-family="Georgia, serif" font-size="8" letter-spacing="1.5">FORGE SEAL</text>
+      </svg>
+    </header>
+
+    <p class="outcome">Ideia endurecida o bastante para handoff BMAD. Fonte da verdade do MVP = este forge; <code>docs/raw_plan.md</code> vira rascunho a cortar.</p>
+
+    <h2>Travas</h2>
+    <ul>
+      <li>Produto dia-1: busca multi-loja de ofertas (não catálogo canônico maduro).</li>
+      <li>Merge: marca + tipo específico + peso; cor fora; tipos separados (PETG ≠ HF ≠ Rapid).</li>
+      <li>Família-pai na busca inclui todos os subtipos; tipo específico filtrável.</li>
+      <li>Frete 100% fora; ranking = preço do anúncio.</li>
+      <li>Valor = lojas fora do ML + taxonomia; ML fora; 5 lojas especializadas BR.</li>
+      <li>UI sem imagens de produto; loja só pelo nome.</li>
+      <li>Scrape: engine determinística + mapa versionado; AI só offline; homologação obrigatória; sem bypass anti-bot.</li>
+      <li>Sem AI no matching do MVP.</li>
+    </ul>
+
+    <h2>Rejeitado</h2>
+    <ul>
+      <li>Canônico maduro como barreira de lançamento.</li>
+      <li>Frete no ranking; imagens/logos; ML no MVP.</li>
+      <li>Adapter artesanal como único modelo; LLM no job de scrape; auto-reparo em produção.</li>
+    </ul>
+
+    <h2>Fracos que sobraram</h2>
+    <ul class="weak">
+      <li>Diâmetro na chave de merge — não decidido.</li>
+      <li>Lista nominal das 5 lojas.</li>
+      <li>Formato exato do mapa/playbook (YAML/JSON/DSL).</li>
+      <li>Monetização / afiliado.</li>
+    </ul>
+
+    <h2>Personas</h2>
+    <div class="personas">
+      <span class="persona">📋 John — PM</span>
+      <span class="persona">📊 Mary — Analyst</span>
+      <span class="persona">🏗️ Winston — Architect</span>
+      <span class="persona">💻 Amelia — Engineer</span>
+      <span class="persona">🎨 Sally — UX</span>
+      <span class="persona">📚 Paige — Docs</span>
+      <span class="persona">🚢 Dana — Pragmatist</span>
+      <span class="persona">😤 Grumbal — Adversary</span>
+      <span class="persona">🔒 Vex — Security</span>
+      <span class="persona">🌶️ Boundary — Edges</span>
+      <span class="persona">🎯 Yui — Craft</span>
+      <span class="persona">🛑 Killjoy — Loop stop</span>
+      <span class="persona">🪵 Splinter — Challenge</span>
+      <span class="persona">🃏 Wildcard — Options</span>
+      <span class="persona">Carla — Compradora</span>
+      <span class="persona">Nico / Lina / Rafa — Domínio</span>
+    </div>
+
+    <footer>
+      Artefatos:
+      <code>_bmad-output/forge/filament-price-spec/forged-idea.md</code>
+      ·
+      <code>forge-report.html</code>
+      ·
+      <code>.memlog.md</code>
+      <br />
+      Próximo passo natural: <code>bmad-spec</code>, <code>bmad-prd</code> ou <code>bmad-prfaq</code> a partir do forged-idea.
+    </footer>
+  </article>
+</body>
+</html>

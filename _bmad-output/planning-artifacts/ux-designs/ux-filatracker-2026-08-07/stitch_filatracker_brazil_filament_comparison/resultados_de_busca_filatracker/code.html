@@ -1,0 +1,225 @@
+<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{"colors":{"surface-container":"#eceef0","surface-container-lowest":"#ffffff","surface-container-low":"#f2f4f6","error-container":"#ffdad6","surface-variant":"#e0e3e5","on-tertiary-fixed":"#001e2f","inverse-on-surface":"#eff1f3","secondary-fixed":"#d5e3fd","on-error":"#ffffff","on-background":"#191c1e","on-primary-container":"#7c839b","inverse-primary":"#bec6e0","outline":"#76777d","primary":"#000000","background":"#f7f9fb","on-secondary-fixed":"#0d1c2f","on-tertiary-fixed-variant":"#004c6e","on-surface-variant":"#45464d","on-secondary-fixed-variant":"#3a485c","on-surface":"#191c1e","tertiary-fixed":"#c9e6ff","tertiary-container":"#001e2f","surface-container-highest":"#e0e3e5","error":"#ba1a1a","outline-variant":"#c6c6cd","on-primary-fixed-variant":"#3f465c","secondary-fixed-dim":"#b9c7e0","tertiary-fixed-dim":"#89ceff","inverse-surface":"#2d3133","tertiary":"#000000","on-secondary":"#ffffff","surface-tint":"#565e74","primary-fixed-dim":"#bec6e0","secondary":"#515f74","on-primary":"#ffffff","on-secondary-container":"#57657b","primary-fixed":"#dae2fd","on-error-container":"#93000a","surface-dim":"#d8dadc","on-tertiary-container":"#008cc7","secondary-container":"#d5e3fd","surface-bright":"#f7f9fb","on-primary-fixed":"#131b2e","on-tertiary":"#ffffff","primary-container":"#131b2e","surface-container-high":"#e6e8ea","surface":"#f7f9fb"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter":"16px","row-height-standard":"48px","margin-mobile":"12px","row-height-dense":"32px","unit":"4px","container-max":"1280px"},"fontFamily":{"data-table":["JetBrains Mono"],"body-sm":["Hanken Grotesk"],"label-caps":["JetBrains Mono"],"headline-lg":["Hanken Grotesk"],"headline-md":["Hanken Grotesk"],"body-lg":["Hanken Grotesk"]},"fontSize":{"data-table":["13px",{"lineHeight":"16px","fontWeight":"500"}],"body-sm":["14px",{"lineHeight":"20px","fontWeight":"400"}],"label-caps":["11px",{"lineHeight":"14px","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}]}}}}</script></head><body class="bg-background font-body-lg text-on-surface"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-container-max mx-auto px-gutter flex items-center justify-between gap-gutter"><a class="font-headline-md text-headline-md tracking-tight uppercase text-primary shrink-0" data-path="comparador" href="#">FilaTracker</a><div class="flex-1 max-w-xl mx-8"><div class="relative flex items-center w-full bg-surface-container-low rounded-lg px-3 py-2 border border-outline-variant focus-within:border-primary transition-all"><span class="material-symbols-outlined text-[20px] text-on-surface-variant mr-2">search</span><input class="w-full bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface placeholder:text-outline" placeholder="Buscar filamentos (ex: PLA Wood, PETG Branco)..." type="text"/></div></div><nav class="flex items-center gap-6 shrink-0" data-active-classes="text-primary font-bold"><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="materiais" href="#">Materiais</a><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="marcas" href="#">Marcas</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-2 cursor-pointer"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></nav></div></header><main class="w-full pt-16 min-h-[calc(100vh-200px)]"><div class="flex flex-col w-full px-gutter max-w-container-max mx-auto py-8">
+<div class="flex flex-col md:flex-row gap-8">
+<!-- Sidebar -->
+<aside class="w-full md:w-3/12 lg:w-3/12 flex-shrink-0">
+<div class="bg-surface-container rounded-xl p-6 shadow-sm sticky top-24">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-md text-headline-md text-on-surface">Filtros</h2>
+<button class="font-label-caps text-label-caps text-primary hover:text-on-surface transition-colors">LIMPAR</button>
+</div>
+<div class="space-y-6">
+<!-- Marca -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-3">Marca</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-4 h-4 rounded bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[12px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">Voolt3D</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-4 h-4 rounded bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[12px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">3D Lab</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-4 h-4 rounded bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[12px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">Esun</span>
+</label>
+</div>
+</div>
+<!-- Tipo -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-3">Tipo Específico</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-4 h-4 rounded bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[12px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">PLA</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-4 h-4 rounded bg-surface border border-outline-variant peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-on-primary text-[12px] opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">PETG HF</span>
+</label>
+</div>
+</div>
+<!-- Peso -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-3">Peso</h3>
+<div class="flex gap-2">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="weight" type="radio"/>
+<div class="px-3 py-1.5 rounded bg-surface-container-low text-on-surface-variant peer-checked:bg-primary peer-checked:text-on-primary font-label-caps text-label-caps transition-all">1KG</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="weight" type="radio"/>
+<div class="px-3 py-1.5 rounded bg-surface-container-low text-on-surface-variant peer-checked:bg-primary peer-checked:text-on-primary font-label-caps text-label-caps transition-all">500G</div>
+</label>
+</div>
+</div>
+<!-- Preço -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-3">Faixa de Preço</h3>
+<input class="w-full accent-primary" max="300" min="0" type="range" value="150"/>
+<div class="flex justify-between mt-2 font-data-table text-data-table text-on-surface-variant">
+<span>R$ 0</span>
+<span>R$ 150</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="w-full md:w-9/12 lg:w-9/12 flex-1 flex flex-col gap-6">
+<!-- Controls -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container rounded-xl p-4 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">42 resultados para <strong class="text-on-surface">PLA e PETG HF</strong></span>
+</div>
+<div class="flex items-center gap-4">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-variant rounded-full peer-checked:bg-primary relative transition-colors duration-200">
+<div class="w-4 h-4 bg-surface rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-5 transition-transform duration-200"></div>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors">Apenas em estoque</span>
+</label>
+<div class="relative bg-surface rounded-lg px-3 py-1.5 border border-outline-variant flex items-center gap-2 cursor-pointer">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">sort</span>
+<select class="bg-transparent border-none outline-none font-body-sm text-body-sm text-on-surface cursor-pointer appearance-none pr-4">
+<option>Menor preço</option>
+<option>R$/kg</option>
+<option>Mais recentes</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-sm flex flex-col w-full">
+<!-- Header -->
+<div class="flex items-center px-4 py-3 bg-surface border-b border-outline-variant">
+<div class="w-2/12 font-label-caps text-label-caps text-on-surface-variant">MARCA</div>
+<div class="w-3/12 font-label-caps text-label-caps text-on-surface-variant">MATERIAL</div>
+<div class="w-1/12 font-label-caps text-label-caps text-on-surface-variant">PESO</div>
+<div class="w-2/12 font-label-caps text-label-caps text-on-surface-variant">LOJA</div>
+<div class="w-2/12 font-label-caps text-label-caps text-on-surface-variant text-right">PREÇO</div>
+<div class="w-2/12"></div>
+</div>
+<!-- Rows -->
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="flex items-center px-4 py-3 hover:bg-surface transition-colors border-b border-outline-variant group">
+<div class="w-2/12 font-body-sm text-body-sm text-on-surface font-semibold">Voolt3D</div>
+<div class="w-3/12 flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface">PETG HF</span>
+<span class="w-2 h-2 rounded-full bg-black"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Preto</span>
+</div>
+<div class="w-1/12 font-data-table text-data-table text-on-surface-variant">1kg</div>
+<div class="w-2/12">
+<span class="inline-flex px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-body-sm text-body-sm">Voolt3D Oficial</span>
+</div>
+<div class="w-2/12 flex flex-col items-end">
+<span class="font-data-table text-data-table text-on-surface font-bold text-lg">R$ 99,90</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">R$ 99,90/kg</span>
+</div>
+<div class="w-2/12 flex justify-end gap-2 items-center pl-4">
+<div class="px-2 py-1 rounded bg-[#e8f5e9] text-[#2e7d32] font-label-caps text-label-caps">DISPONÍVEL</div>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors flex items-center gap-1">
+                                VER <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex items-center px-4 py-3 hover:bg-surface transition-colors border-b border-outline-variant group">
+<div class="w-2/12 font-body-sm text-body-sm text-on-surface font-semibold">3D Lab</div>
+<div class="w-3/12 flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface">PLA Premium</span>
+<span class="w-2 h-2 rounded-full bg-white border border-outline"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Branco</span>
+</div>
+<div class="w-1/12 font-data-table text-data-table text-on-surface-variant">1kg</div>
+<div class="w-2/12">
+<span class="inline-flex px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-body-sm text-body-sm">Mercado Livre</span>
+</div>
+<div class="w-2/12 flex flex-col items-end">
+<span class="font-data-table text-data-table text-on-surface font-bold text-lg text-amber-600">R$ 109,90</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant line-through">R$ 129,90</span>
+</div>
+<div class="w-2/12 flex justify-end gap-2 items-center pl-4">
+<div class="px-2 py-1 rounded bg-[#fff8e1] text-[#f57f17] font-label-caps text-label-caps">PROMOÇÃO</div>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors flex items-center gap-1">
+                                VER <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="flex items-center px-4 py-3 hover:bg-surface transition-colors border-b border-outline-variant group">
+<div class="w-2/12 font-body-sm text-body-sm text-on-surface font-semibold">Esun</div>
+<div class="w-3/12 flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface">PLA+</span>
+<span class="w-2 h-2 rounded-full bg-red-500"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Vermelho</span>
+</div>
+<div class="w-1/12 font-data-table text-data-table text-on-surface-variant">1kg</div>
+<div class="w-2/12">
+<span class="inline-flex px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-body-sm text-body-sm">Esun Brasil</span>
+</div>
+<div class="w-2/12 flex flex-col items-end">
+<span class="font-data-table text-data-table text-on-surface font-bold text-lg">R$ 145,00</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">R$ 145,00/kg</span>
+</div>
+<div class="w-2/12 flex justify-end gap-2 items-center pl-4">
+<div class="px-2 py-1 rounded bg-[#e8f5e9] text-[#2e7d32] font-label-caps text-label-caps">DISPONÍVEL</div>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-caps text-label-caps hover:bg-primary/90 transition-colors flex items-center gap-1">
+                                VER <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- OOS Row -->
+<div class="flex items-center px-4 py-3 bg-surface-container-low opacity-75 border-b border-outline-variant group">
+<div class="w-2/12 font-body-sm text-body-sm text-on-surface-variant">Overture</div>
+<div class="w-3/12 flex items-center gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">PETG</span>
+<span class="w-2 h-2 rounded-full bg-blue-500 opacity-50"></span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Azul Transparente</span>
+</div>
+<div class="w-1/12 font-data-table text-data-table text-on-surface-variant">1kg</div>
+<div class="w-2/12">
+<span class="inline-flex px-2 py-0.5 rounded bg-surface text-on-surface-variant font-body-sm text-body-sm">Amazon</span>
+</div>
+<div class="w-2/12 flex flex-col items-end">
+<span class="font-data-table text-data-table text-on-surface-variant font-bold text-lg">R$ 139,90</span>
+</div>
+<div class="w-2/12 flex justify-end gap-2 items-center pl-4">
+<div class="px-2 py-1 rounded bg-[#ffebee] text-[#c62828] font-label-caps text-label-caps">INDISPONÍVEL</div>
+<button class="px-3 py-1.5 bg-surface-variant text-on-surface-variant rounded font-label-caps text-label-caps cursor-not-allowed flex items-center gap-1">
+                                VER <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex justify-end pt-4">
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                    Frete e condições da loja podem alterar o valor final.
+                </p>
+</div>
+</main>
+</div>
+</div></main><footer class="w-full bg-surface-container-highest mt-12 py-10"><div class="max-w-container-max mx-auto px-gutter"><div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end"><div class="space-y-2"><p class="text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Aviso Legal</p><p class="text-body-sm font-body-sm text-on-surface-variant max-w-md">Os preços podem mudar a qualquer momento. Frete e condições da loja podem alterar o valor final. Verifique sempre no site oficial do revendedor antes de finalizar a compra.</p></div><div class="flex flex-col items-end gap-2 text-right"><p class="text-body-sm font-body-sm text-on-surface-variant">Este site pode conter links de afiliado. Ao comprar através deles, podemos receber uma pequena comissão sem custo adicional para você.</p><p class="text-body-sm font-body-sm font-bold text-on-surface">© 2024 FilaTracker • Feito para Makers</p></div></div></div></footer></body></html>

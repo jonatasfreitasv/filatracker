@@ -1,0 +1,9 @@
+packages:
+  - .
+engineStrict: true
+overrides:
+  "@cloudflare/vite-plugin": "1.51.0"
+  wrangler: "4.119.0"
+allowBuilds:
+  esbuild: true
+  workerd: true

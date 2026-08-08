@@ -1,0 +1,80 @@
+# generated: 2026-08-08
+# last_updated: 2026-08-08
+# project: filatracker
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-08-08
+last_updated: 2026-08-08
+project: filatracker
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  epic-1: in-progress
+  1-1-set-up-the-initial-project-from-the-official-starter: done
+  1-2-homologate-the-first-real-store-adapter: backlog
+  1-3-publish-closin-through-the-deterministic-pipeline: backlog
+  1-4-search-published-closin-offers-end-to-end: backlog
+  1-5-search-across-two-real-stores: backlog
+  1-6-discover-by-material-family-and-brand: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-add-homologated-3d-colors-coverage: backlog
+  2-2-add-homologated-filamentos-3d-brasil-coverage: backlog
+  2-3-add-homologated-topink3d-filament-only-coverage: backlog
+  2-4-operate-honest-and-recoverable-five-store-coverage: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-group-only-exact-comparable-offers: backlog
+  3-2-filter-and-sort-comparable-results: backlog
+  3-3-compare-offers-on-trustworthy-detail-pages: backlog
+  3-4-show-store-promotions-and-per-offer-price-history: backlog
+  3-5-production-validate-the-complete-comparison-journey: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-continue-safely-to-the-current-merchant-listing: backlog
+  4-2-measure-privacy-bounded-outbound-clicks: backlog
+  4-3-activate-affiliate-disclosure-without-changing-user-trust: backlog
+  4-4-launch-and-operate-the-complete-production-product: backlog
+  epic-4-retrospective: optional
