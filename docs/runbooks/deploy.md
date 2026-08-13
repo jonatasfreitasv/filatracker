@@ -12,7 +12,7 @@ Production Cloudflare account credentials for deploy/migrate are held only by th
 
 ## Prerequisites
 
-1. CI green on the candidate commit (typecheck, lint, unit, contract N/N-1, worker integration, binding-denial, contrast, a11y/responsive contracts).
+1. CI green on the candidate commit (typecheck, lint, unit, strict SearchPage v2 contract, worker integration, binding-denial, contrast, a11y/responsive contracts).
 2. `RPC_CAPABILITY_SECRET` generated per deployment and stored only as an encrypted Worker secret (never in git, logs, or client bundles).
 3. Production D1 created; note the **immutable database name** (not the binding name) for migration commands.
 
@@ -39,20 +39,22 @@ Never point local/CI credentials at production D1.
 
 ## Deploy order (mandatory)
 
-1. Deploy **ingest** first (Service Binding target must exist):
+1. Apply D1 migrations (including `0003_search_fts.sql` and `0004_voolt3d_store_state.sql`) to the immutable DB name.
+2. Deploy **ingest** first with strict SearchPage **v2** acceptance (the initial pre-launch wire):
 
 ```bash
 pnpm run deploy:ingest
-# equivalent: wrangler deploy -c wrangler.ingest.jsonc
 ```
 
-2. Canary the RPC surface (`getSearchPage`) against production ingest before activating web traffic on a new web version.
-3. Deploy **web**:
+3. Canary real published search + FTS/relational fallback against production ingest
+   before activating web traffic.
+4. Deploy **web** (emits/depends on SearchPage v2):
 
 ```bash
 pnpm run deploy:web
-# equivalent: react-router build && wrangler deploy -c wrangler.web.jsonc
 ```
+
+5. Verify rollback by rolling web and ingest back together; there is no released v1 consumer to preserve.
 
 ## Secrets
 
@@ -70,16 +72,25 @@ Rotate by putting a new value and redeploying ingest then web. Never echo secret
 
 After ingest deploy, before or during web activation:
 
-1. Confirm `getSearchPage` returns a typed `RpcOutcome` for empty Home (`ok`, zero hits).
-2. Confirm invalid query mapping → non-cacheable 400.
-3. Confirm forced ingest unavailability → non-cacheable 503 + `Retry-After` (never empty-as-failure).
-4. Confirm `wrangler.web` binding inventory still has no D1/queues/schedules/Store secrets.
+1. Confirm `getSearchPage` returns typed `RpcOutcome` for empty Home (`ok`, zero hits, null query).
+2. Confirm a known published Closin query returns `offer` hits with Store text name and no CTAs.
+3. Confirm a dual-Store canary (Closin + Voolt3D, when both are operator-activated) returns
+   separate `offer` rows with distinct `storeId` / Store text names — never Merge, never
+   “5 lojas” / full-MVP coverage copy beyond active `storeSupport`.
+4. Confirm FTS failure path returns explicit `degraded` (never false empty no-match).
+5. Confirm invalid query / cursor mapping → non-cacheable 400.
+6. Confirm forced ingest unavailability → non-cacheable 503 + `Retry-After`.
+7. Confirm `wrangler.web` binding inventory still has no D1/queues/schedules/Store secrets.
+8. Confirm raw query text is absent from allowlisted logs (code + correlation ID only).
+9. Confirm one Store unsupported/degraded does not hide the other Store’s last valid generation.
 
 ## Rollback
 
 1. Roll back **web** first to the previous Workers version (immediate).
-2. If ingest RPC is incompatible, roll back **ingest** to the last mutually accepted N/N-1 version.
-3. Do not partially disable CI gates or substitute mocks to “restore” traffic.
+2. SearchPage v2 is the initial contract; roll ingest back with web if the RPC changes.
+3. Do not drop FTS slots, `listing_title`, or `search_text` columns during rollback.
+4. Introduce N/N-1 compatibility only after the first released SearchPage version exists.
+5. Do not partially disable CI gates or substitute mocks to “restore” traffic.
 
 ```bash
 wrangler rollback -c wrangler.web.jsonc

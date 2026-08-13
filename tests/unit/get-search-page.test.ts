@@ -1,16 +1,40 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { normalizeSearchQuery } from "../../src/domain/search-query";
 import { getSearchPage } from "../../src/application/get-search-page";
-import type { SearchCatalogPort } from "../../src/application/ports";
+import type {
+  SearchCatalogPort,
+  SearchPageSnapshot,
+} from "../../src/application/ports";
+import {
+  SEARCH_PAGE_CONTRACT_VERSION,
+  type SearchPage,
+} from "../../src/contracts";
 
-function emptyCatalog(): SearchCatalogPort {
+function emptyPage(query: string | null): SearchPage {
   return {
-    async getEpochs() {
-      return { projectionEpoch: 1, supportEpoch: 1 };
+    query,
+    hits: [],
+    totalCount: 0,
+    materialFamilySuggestions: [],
+    storeSupport: [],
+    nextCursor: null,
+    hasNextPage: false,
+    limits: {
+      maxHits: 50,
+      maxQueryScalars: 120,
+      maxQueryUtf8Bytes: 512,
+      maxCursorUtf8Bytes: 1024,
     },
-    async searchPublished() {
-      return { hits: [], totalCount: 0, materialFamilySuggestions: [] };
+  };
+}
+
+function catalogWithSnapshot(
+  snapshot: SearchPageSnapshot,
+): SearchCatalogPort {
+  return {
+    async getSearchPageSnapshot() {
+      return snapshot;
     },
   };
 }
@@ -42,53 +66,100 @@ describe("normalizeSearchQuery", () => {
       ok: false,
       reason: "over_limit",
     });
+    expect(normalizeSearchQuery(" ".repeat(121))).toEqual({
+      ok: false,
+      reason: "over_limit",
+    });
   });
 });
 
 describe("getSearchPage", () => {
+  it("propagates one supplied correlation ID into catalog and envelope", async () => {
+    const correlationId = "33333333-3333-4333-8333-333333333333";
+    let catalogCorrelationId: string | undefined;
+    const catalog: SearchCatalogPort = {
+      async getSearchPageSnapshot(input) {
+        catalogCorrelationId = input.correlationId;
+        return {
+          outcome: "ok",
+          projectionEpoch: 1,
+          supportEpoch: 1,
+          searchWriteGeneration: 0,
+          page: emptyPage(null),
+          qualification: null,
+        };
+      },
+    };
+    const result = await getSearchPage(catalog, { correlationId });
+    expect(catalogCorrelationId).toBe(correlationId);
+    expect(result.correlationId).toBe(correlationId);
+  });
+
   it("returns ok with zero hits for empty catalog", async () => {
-    const result = await getSearchPage(emptyCatalog(), {});
+    const result = await getSearchPage(
+      catalogWithSnapshot({
+        outcome: "ok",
+        projectionEpoch: 1,
+        supportEpoch: 1,
+        searchWriteGeneration: 0,
+        page: emptyPage(null),
+        qualification: null,
+      }),
+      {},
+    );
     expect(result.outcome).toBe("ok");
+    expect(result.contractVersion).toBe(SEARCH_PAGE_CONTRACT_VERSION);
     if (result.outcome === "ok") {
       expect(result.data.hits).toEqual([]);
       expect(result.data.totalCount).toBe(0);
-      expect(result.data.materialFamilySuggestions).toEqual([]);
       expect(result.data.query).toBeNull();
     }
   });
 
-  it("returns invalid for over-limit query", async () => {
-    const result = await getSearchPage(emptyCatalog(), {
-      q: "x".repeat(200),
-    });
-    expect(result.outcome).toBe("invalid");
-  });
-
   it("returns invalid for unknown parameters flag", async () => {
-    const result = await getSearchPage(emptyCatalog(), {
-      hasInvalidParameters: true,
-    });
+    const result = await getSearchPage(
+      catalogWithSnapshot({
+        outcome: "ok",
+        projectionEpoch: 1,
+        supportEpoch: 1,
+        searchWriteGeneration: 0,
+        page: emptyPage(null),
+        qualification: null,
+      }),
+      { hasInvalidParameters: true },
+    );
     expect(result.outcome).toBe("invalid");
   });
 
-  it("maps catalog failures to unavailable", async () => {
+  it("maps catalog throws to unavailable without leaking error objects", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const catalog: SearchCatalogPort = {
-      async getEpochs() {
-        throw new Error("boom");
-      },
-      async searchPublished() {
-        return { hits: [], totalCount: 0, materialFamilySuggestions: [] };
+      async getSearchPageSnapshot() {
+        throw new Error("secret query PLA leaked");
       },
     };
     const result = await getSearchPage(catalog, { q: "pla" });
     expect(result.outcome).toBe("unavailable");
+    expect(JSON.stringify(spy.mock.calls)).not.toMatch(/secret query|PLA leaked/);
+    spy.mockRestore();
   });
 
-  it("never fabricates offers on empty catalog search", async () => {
-    const result = await getSearchPage(emptyCatalog(), { q: "closin" });
-    expect(result.outcome).toBe("ok");
-    if (result.outcome === "ok") {
-      expect(result.data.hits).toHaveLength(0);
+  it("preserves degraded zero hits (never reclassifies as no-match)", async () => {
+    const result = await getSearchPage(
+      catalogWithSnapshot({
+        outcome: "degraded",
+        projectionEpoch: 4,
+        supportEpoch: 5,
+        searchWriteGeneration: 6,
+        page: emptyPage("pla"),
+        qualification: "FTS indisponível",
+      }),
+      { q: "pla" },
+    );
+    expect(result.outcome).toBe("degraded");
+    if (result.outcome === "degraded") {
+      expect(result.data.totalCount).toBe(0);
+      expect(result.qualification).toMatch(/FTS/);
     }
   });
 });

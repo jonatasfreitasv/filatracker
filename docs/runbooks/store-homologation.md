@@ -1,4 +1,4 @@
-# Store homologation runbook (Closin)
+# Store homologation runbook (Closin + Voolt3D)
 
 ## Purpose
 
@@ -13,34 +13,50 @@ There is **no staging environment** (AD-11).
 - `src/adapters/stores/<store>/robots-evidence/` — robots audit evidence
 - `src/adapters/stores/<store>/capacity/` — budgets, dry-run D1 inputs, probe results
 
-Closin is the gold-standard template for later Stores.
+Closin is the gold-standard template. Voolt3D mirrors the same layout under
+`src/adapters/stores/voolt3d/`.
 
 ## Activation status
 
-**Closin remains NOT activated for publication.**
+**Both Closin and Voolt3D publication activation remain BLOCKED by default**
+(`activation_gate = blocked`, `support_state = unsupported` in D1 seed).
 
-Activation stays blocked until:
+A Store may be **operator-activated for publication** only after:
 
-1. This homologation gate passes (Story 1.2)
-2. Story 1.3 completes the AD-8 bounded set-based D1 `batch()` proof
-3. An operator explicitly activates coverage
+1. Homologation gate passes (fixtures, robots, destination policy, budgets)
+2. AD-8 bounded set-based D1 `batch()` protocol proof (reuse Stories 1.3/1.4 shape)
+3. Migrations, atomicity, replay, rollback, purge verification succeed without stubs
+4. A **current safe probe** and **explicit operator approval** set
+   `activation_gate = approved` (tooling/runbook — not a public RPC)
 
-Rollback: keep the Store inactive; pin/revert `mapVersion` / `parserVersion` without partial publish.
+Passing automated tests does **not** auto-activate either Store.
 
-## Gate checklist
+**Public search** projects visible Offers into rebuildable D1 FTS5 and serves
+`getSearchPage` v2 hits over Service Binding. Unsupported/deactivated Stores are
+excluded atomically from relational visibility and the active FTS slot.
 
-| # | Gate | Evidence |
-| --- | --- | --- |
-| 1 | Map schema validation | `StoreMapSchema.parse(closinMap)` + unit tests |
-| 2 | Fixture suite green | `tests/unit/closin-fixtures.test.ts` |
-| 3 | Robots evidence pass | `robots-evidence/homologation-evidence.json` + robots unit tests |
-| 4 | Safe probe pass | `CLOSIN_PROBE=1 pnpm exec vitest run tests/unit/closin-probe.test.ts --project unit` |
-| 5 | Destination policy pass | `tests/unit/destination-policy.test.ts` |
-| 6 | Source-identity + filament-eligibility + promotion policy | domain unit tests + fixtures |
-| 7 | Completeness/run-outcome matrix | `store-contracts` + adapter failure outcomes |
-| 8 | Adapter capacity + **pending** AD-8 D1 proof | `capacity/capacity-artifact.json` (`ad8ProofStatus: pending-story-1-3`) |
-| 9 | Telemetry allowlist/redaction; sink disabled | `telemetry-redaction.ts` + budget tests |
-| 10 | Rollback evidence | Store inactive; map/parser pins; no publication path in 1.2 |
+Coverage honesty: never claim five-Store / full MVP coverage when only Closin,
+Voolt3D, or fewer are active. Prefer `storeSupport`-derived copy.
+
+Rollback: keep the Store inactive; pin/revert `mapVersion` / `parserVersion`;
+retain prior Store generation on failed/quarantined/oversized runs.
+
+See also: `docs/runbooks/ingestion-recovery.md`.
+
+## Gate checklist (per Store)
+
+| # | Gate | Closin evidence | Voolt3D evidence |
+| --- | --- | --- | --- |
+| 1 | Map schema validation | `loadClosinMap()` | `loadVoolt3dMap()` |
+| 2 | Fixture suite green | `tests/unit/closin-fixtures.test.ts` | `tests/unit/voolt3d-fixtures.test.ts` |
+| 3 | Robots evidence pass | `closin/robots-evidence/` | `voolt3d/robots-evidence/` |
+| 4 | Safe probe pass | `CLOSIN_PROBE=1 pnpm run probe:closin` | `VOOLT3D_PROBE=1 pnpm run probe:voolt3d` |
+| 5 | Destination policy pass | shared unit tests | shared unit tests |
+| 6 | Source-identity + filament-eligibility + promotion | domain + fixtures | domain + fixtures |
+| 7 | Completeness/run-outcome matrix | adapter outcomes | adapter outcomes |
+| 8 | Adapter capacity + AD-8 D1 protocol | `closin/capacity/` | `voolt3d/capacity/` (protocol reuse) |
+| 9 | Telemetry allowlist/redaction | shared | shared |
+| 10 | Rollback evidence | inactive by default | inactive by default |
 
 Gate **fails** if any production path uses a mock Store source (AR30).
 
@@ -52,12 +68,15 @@ Gate **fails** if any production path uses a mock Store source (AR30).
 
 ## Probe safety
 
-- Hard caps: pages, bytes, duration, concurrency (`CLOSIN_BUDGETS`)
-- No D1 Offer/FTS writes, no queues, no projection-epoch mutation
+- Hard caps: pages, bytes, duration, concurrency (`CLOSIN_BUDGETS` / `VOOLT3D_BUDGETS`)
+- Probe runs are always non-publishing (`probeId != null`)
 - Do not set production D1/Store secrets in the probe process
-- Telemetry is allowlisted and redacts destination URLs / UA / payloads
+- Telemetry is allowlisted and redacts destination URLs / UA / payloads / digests
 
 ## CI
 
-PR CI runs recorded fixtures, robots, destination-policy, budgets, and binding/import guards.
-Live probe is optional/manual (`CLOSIN_PROBE=1`) because it is network-dependent.
+PR CI runs recorded fixtures, robots, destination-policy, budgets, binding/import guards,
+pipeline/CAS/capacity worker tests, multi-Store isolation, and homologation scripts.
+Live probes are optional/manual (`CLOSIN_PROBE=1` / `VOOLT3D_PROBE=1`) because they are network-dependent.
+
+Closin live probe remains quarantined in deferred-work until a current safe probe succeeds.

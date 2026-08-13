@@ -11,9 +11,9 @@
  */
 
 import {
-  RAW_OFFER_OBSERVATION_CONTRACT_VERSION,
+  RAW_OFFER_OBSERVATION_CONTRACT_VERSION_V2,
   type Availability,
-  type RawOfferObservation,
+  type RawOfferObservationV2,
 } from "../../../contracts/raw-offer-observation";
 import { CLOSIN_MAP_VERSION, CLOSIN_PARSER_VERSION, CLOSIN_STORE_ID } from "./map";
 import { CLOSIN_BUDGETS } from "./budgets";
@@ -256,15 +256,19 @@ export function extractClosinPdp(html: string, sourceUrl: string): ExtractedCand
   };
 }
 
+/**
+ * Emit observation v2 (title/description evidence required for honest normalize).
+ * Producers emit v2 only after v1+v2 consumers are deployed (Story 1.3).
+ */
 export function toRawObservation(input: {
   candidate: ExtractedCandidate;
   runId: string;
   probeId: string | null;
   observedAt: string;
-}): RawOfferObservation {
+}): RawOfferObservationV2 {
   const c = input.candidate;
   return {
-    contractVersion: RAW_OFFER_OBSERVATION_CONTRACT_VERSION,
+    contractVersion: RAW_OFFER_OBSERVATION_CONTRACT_VERSION_V2,
     storeId: CLOSIN_STORE_ID,
     runId: input.runId,
     probeId: input.probeId,
@@ -283,6 +287,8 @@ export function toRawObservation(input: {
     colorEvidence: c.colorEvidence,
     diameterEvidence: c.diameterEvidence,
     massGrams: c.massGrams,
+    titleEvidence: c.titleEvidence,
+    descriptionEvidence: c.descriptionEvidence,
     observedAt: input.observedAt,
     mapVersion: CLOSIN_MAP_VERSION,
     parserVersion: CLOSIN_PARSER_VERSION,

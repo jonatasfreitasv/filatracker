@@ -23,7 +23,15 @@ describe("ingest getSearchPage RPC (workers)", () => {
     expect(typeof IngestService).toBe("function");
   });
 
-  it("migration creates singleton projection_meta only", async () => {
+  it("carries the caller correlation ID through the Worker and application", async () => {
+    const correlationId = "44444444-4444-4444-8444-444444444444";
+    const service = Object.create(IngestService.prototype) as IngestService;
+    Object.defineProperty(service, "env", { value: { DB: env.DB }, configurable: true });
+    const result = await service.getSearchPage({ q: "closin" }, correlationId);
+    expect(result.correlationId).toBe(correlationId);
+  });
+
+  it("migration creates projection_meta and Story 1.3 publication tables", async () => {
     const row = await env.DB.prepare(
       "SELECT projection_epoch, support_epoch FROM projection_meta WHERE id = 1",
     ).first<{ projection_epoch: number; support_epoch: number }>();
@@ -38,6 +46,19 @@ describe("ingest getSearchPage RPC (workers)", () => {
     const names = (tables.results ?? [])
       .map((t: { name: string }) => t.name)
       .sort();
-    expect(names).toEqual(["projection_meta"]);
+    expect(names).toContain("projection_meta");
+    expect(names).toContain("offers");
+    expect(names).toContain("ingestion_runs");
+    expect(names).toContain("ingestion_inbox");
+    expect(names).toContain("price_points");
+    expect(names).toContain("store_state");
+    expect(names).toContain("retained_payloads");
+    expect(names).toContain("publication_claims");
+
+    const closin = await env.DB.prepare(
+      "SELECT activation_gate, support_state FROM store_state WHERE store_id = 'closin'",
+    ).first<{ activation_gate: string; support_state: string }>();
+    expect(closin?.activation_gate).toBe("blocked");
+    expect(closin?.support_state).toBe("unsupported");
   });
 });

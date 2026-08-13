@@ -1,0 +1,16 @@
+{
+  "id": "pdp-pla-preto-oos",
+  "sourceUrl": "https://voolt3d.com.br/produtos/filamento-pla-preto-premium/",
+  "sanitizerMethod": "ldjson-page-match-strip-images",
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "unavailable",
+    "listingPriceCentavos": 12499,
+    "massGrams": 1000,
+    "variantSku": "PL-PR-1"
+  },
+  "contentDigestSha256": "0b27be87ca5df48371b9a9e39cd182b8df7fd544256b094c5570107b513cf6c9",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

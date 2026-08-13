@@ -1,0 +1,15 @@
+{
+  "id": "pdp-availability-unknown",
+  "sourceUrl": "https://voolt3d.com.br/produtos/filamento-pla-availability-unknown-fixture/",
+  "sanitizerMethod": "synthetic-from-live-shape",
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "unknown",
+    "listingPriceCentavos": 9990,
+    "massGrams": 1000
+  },
+  "contentDigestSha256": "73545a24a67baa74756138d1e067ef1b466e9b7424f0e1613136133e2b6c4396",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

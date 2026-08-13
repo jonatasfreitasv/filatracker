@@ -67,6 +67,24 @@ describe("adapter budgets all-or-nothing", () => {
     expect(result.budgetUsage.observationCount).toBe(1);
   });
 
+  it("fails closed when sitemap discovery yields an empty catalog", async () => {
+    const adapter = createClosinStoreAdapter();
+    const result = await adapter.observe({
+      runId: "empty-catalog",
+      probeId: null,
+      fixtureBodies: new Map([
+        [robotsUrl, allowRobots],
+        [
+          "https://www.closin.com.br/store-products-sitemap.xml",
+          '<?xml version="1.0"?><urlset></urlset>',
+        ],
+      ]),
+    });
+    expect(result.outcome).toBe("failed");
+    expect(result.observations).toEqual([]);
+    expect(result.failureCodes).toContain("empty_catalog");
+  });
+
   it("redacts telemetry to allowlisted keys only", () => {
     const redacted = emitStoreTelemetry({
       event: "test",

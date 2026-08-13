@@ -19,11 +19,16 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:homologation": "vitest run --project unit tests/unit/store-contracts.test.ts tests/unit/source-identity.test.ts tests/unit/destination-policy.test.ts tests/unit/robots-policy.test.ts tests/unit/closin-fixtures.test.ts tests/unit/closin-budgets.test.ts tests/unit/store-binding-and-imports.test.ts",
+    "test:homologation": "vitest run --project unit tests/unit/store-contracts.test.ts tests/unit/source-identity.test.ts tests/unit/destination-policy.test.ts tests/unit/robots-policy.test.ts tests/unit/closin-fixtures.test.ts tests/unit/closin-budgets.test.ts tests/unit/voolt3d-fixtures.test.ts tests/unit/voolt3d-budgets.test.ts tests/unit/store-binding-and-imports.test.ts tests/unit/store-runtime-resolution.test.ts",
+    "test:pipeline": "vitest run --project unit tests/unit/story-1-3-contracts.test.ts tests/unit/story-1-3-pipeline.test.ts && vitest run --project workers tests/workers/publication-pipeline.test.ts tests/workers/multi-store-isolation.test.ts",
+    "test:search": "vitest run --project unit tests/unit/story-1-4-contracts.test.ts tests/unit/get-search-page.test.ts tests/unit/contracts-and-bindings.test.ts tests/unit/rpc-client.test.ts && vitest run --project workers tests/workers/search-pipeline.test.ts tests/workers/multi-store-isolation.test.ts && vitest run --project e2e tests/e2e/search-route.e2e.test.ts",
+    "benchmark:search": "node scripts/search-latency-benchmark.mjs",
     "probe:closin": "CLOSIN_PROBE=1 vitest run --project unit tests/unit/closin-probe.test.ts",
+    "probe:voolt3d": "VOOLT3D_PROBE=1 vitest run --project unit tests/unit/voolt3d-probe.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply filatracker-local --local -c wrangler.ingest.jsonc",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run test"
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test",
+    "runz": "pnpm -C dev_tools/runz tauri dev"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

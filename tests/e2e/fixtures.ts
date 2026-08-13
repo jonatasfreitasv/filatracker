@@ -7,9 +7,13 @@ import {
   EmptyState,
   ErrorState,
   LoadingRows,
+  QualificationBanner,
+  ResultsTable,
   SearchControl,
   Shell,
+  SuggestionChips,
 } from "../../app/design-system";
+import type { SearchHit } from "../../src/contracts";
 
 const tokensCss = readFileSync(
   resolve("app/design-system/tokens.css"),
@@ -17,6 +21,10 @@ const tokensCss = readFileSync(
 );
 const componentsCss = readFileSync(
   resolve("app/design-system/components.css"),
+  "utf8",
+);
+const resultsCss = readFileSync(
+  resolve("app/design-system/results.css"),
   "utf8",
 );
 
@@ -28,11 +36,50 @@ function toDocument(title: string, body: ReturnType<typeof e>): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${title}</title>
-<style>${tokensCss}\n${componentsCss}</style>
+<style>${tokensCss}\n${componentsCss}\n${resultsCss}</style>
 </head>
 <body>${markup}</body>
 </html>`;
 }
+
+const sampleHits: SearchHit[] = [
+  {
+    kind: "offer",
+    id: "off_1",
+    title: '<img src=x onerror=alert(1)> PLA Branco',
+    brandName: "Closin",
+    materialFamily: "PLA",
+    specificTypeLabel: null,
+    color: "Branco",
+    diameterMm: 1.75,
+    massGrams: 1000,
+    listingPriceCentavos: 8990,
+    pricePerKgCentavos: 8990,
+    availability: "available",
+    stale: false,
+    storeId: "closin",
+    storeName: "Closin",
+    observedAt: "2026-08-09T00:00:00.000Z",
+  },
+  {
+    kind: "offer",
+    id: "off_2",
+    title: "PETG Preto 1kg",
+    brandName: "Closin",
+    materialFamily: "PETG",
+    specificTypeLabel: null,
+    color: "Preto",
+    diameterMm: 1.75,
+    massGrams: 1000,
+    listingPriceCentavos: 10990,
+    pricePerKgCentavos: 10990,
+    availability: "unknown",
+    stale: true,
+    storeId: "closin",
+    storeName: "Closin",
+    observedAt: "2026-08-01T00:00:00.000Z",
+  },
+];
 
 export type Fixture = {
   name: string;
@@ -64,11 +111,48 @@ export const FIXTURES: Fixture[] = [
             autoFocus: true,
           }),
           e(EmptyState, {
-            title: "Nenhum filamento publicado ainda.",
+            title: "Busque um filamento para começar.",
             description:
-              "Quando houver ofertas publicadas, os resultados aparecerão aqui.",
+              "Use o campo acima para encontrar ofertas publicadas entre lojas.",
           }),
         ),
+      ),
+    ),
+  },
+  {
+    name: "search-populated",
+    hasSearchInput: true,
+    html: toDocument(
+      "Busca: PLA — FilaTracker",
+      e(
+        Shell,
+        { searchDefaultValue: "PLA" },
+        e("h1", { className: "ft-visually-hidden" }, "Busca de filamentos"),
+        e(ResultsTable, {
+          hits: sampleHits,
+          caption: "Resultados para PLA",
+        }),
+      ),
+    ),
+  },
+  {
+    name: "search-degraded-populated",
+    hasSearchInput: true,
+    html: toDocument(
+      "Busca: PLA — FilaTracker",
+      e(
+        Shell,
+        { searchDefaultValue: "PLA" },
+        e("h1", { className: "ft-visually-hidden" }, "Busca de filamentos"),
+        e(
+          QualificationBanner,
+          null,
+          "Busca em modo degradado — resultados via caminho relacional.",
+        ),
+        e(ResultsTable, {
+          hits: sampleHits,
+          caption: "Resultados para PLA",
+        }),
       ),
     ),
   },
@@ -82,6 +166,12 @@ export const FIXTURES: Fixture[] = [
         { searchDefaultValue: "pla exotico" },
         e("h1", { className: "ft-visually-hidden" }, "Busca de filamentos"),
         e(EmptyState, { title: "Não encontramos esse filamento." }),
+        e(SuggestionChips, {
+          suggestions: [
+            { id: "PLA", slug: "PLA", label: "PLA" },
+            { id: "PETG", slug: "PETG", label: "PETG" },
+          ],
+        }),
       ),
     ),
   },

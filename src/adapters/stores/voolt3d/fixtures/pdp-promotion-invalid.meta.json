@@ -1,0 +1,15 @@
+{
+  "id": "pdp-promotion-invalid",
+  "sourceUrl": "https://voolt3d.com.br/produtos/filamento-pla-promo-invalid-fixture/",
+  "sanitizerMethod": "ldjson-plus-ls-variants-invalid-promo",
+  "expectedOutcome": {
+    "kind": "observation",
+    "listingPriceCentavos": 9558,
+    "originalPriceCentavos": 9000,
+    "isPromotion": false
+  },
+  "contentDigestSha256": "9e3f063250ef206b27025feaa629ec68c822ad26100e8abd51c6d731a81940fd",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

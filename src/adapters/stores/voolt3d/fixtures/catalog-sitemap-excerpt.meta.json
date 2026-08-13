@@ -1,0 +1,16 @@
+{
+  "id": "catalog-sitemap-excerpt",
+  "sourceUrl": "https://voolt3d.com.br/sitemap.xml",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "contentDigestSha256": "cd9af0278ceb855859803edb8e74048054ab088fcfba195355b603a7f5e975dd",
+  "sanitizerMethod": "first-25-product-locs-from-live-sitemap",
+  "mapVersion": 1,
+  "parserVersion": 1,
+  "expectedOutcome": {
+    "kind": "discovery",
+    "productUrlCount": 25,
+    "measuredFullCatalog": 213
+  },
+  "measuredFullCatalogProductUrls": 213,
+  "measuredAt": "2026-08-10T05:58:00.000Z"
+}

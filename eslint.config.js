@@ -18,6 +18,7 @@ export default tseslint.config(
       ".agents/**",
       ".claude/**",
       "docs/**",
+      "dev_tools/**",
     ],
   },
   eslint.configs.recommended,

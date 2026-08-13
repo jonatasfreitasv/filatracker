@@ -18,6 +18,8 @@ pnpm run db:migrate:local
 pnpm run dev
 ```
 
+Desktop helper (start/stop, migrations, checks, sprint): `pnpm run runz`
+
 ## Checks
 
 ```bash

@@ -13,8 +13,10 @@ import {
 import { safeFetchText } from "../../../application/safe-fetch";
 import type {
   FailureCode,
-  StoreRunEvidence,
+  StoreRunEvidenceV2,
 } from "../../../contracts/store-run-evidence";
+import { STORE_RUN_EVIDENCE_CONTRACT_VERSION_V2 } from "../../../contracts/store-run-evidence";
+import type { RawOfferObservationV2 } from "../../../contracts/raw-offer-observation";
 import { classifyFilamentEligibility } from "../../../domain/policy/filament-eligibility";
 import { deriveSourceTuple } from "../../../domain/identity/source-identity";
 import { CLOSIN_BUDGETS } from "./budgets";
@@ -49,6 +51,12 @@ function emptyBudget() {
   };
 }
 
+type Omission = {
+  code: string;
+  detail: string | null;
+  sourceUrl: string | null;
+};
+
 function failRun(input: {
   runId: string;
   probeId: string | null;
@@ -58,10 +66,10 @@ function failRun(input: {
   failureCodes: FailureCode[];
   catalogWork: { expected: number; completed: number };
   budgetUsage: ReturnType<typeof emptyBudget>;
-  omissions?: StoreRunEvidence extends { omissions: infer O } ? O : never;
-}): StoreRunEvidence {
+  omissions?: Omission[];
+}): StoreRunEvidenceV2 {
   return {
-    contractVersion: 1,
+    contractVersion: STORE_RUN_EVIDENCE_CONTRACT_VERSION_V2,
     storeId: CLOSIN_STORE_ID,
     runId: input.runId,
     probeId: input.probeId,
@@ -314,19 +322,30 @@ export function createClosinStoreAdapter(): StoreObservationPort {
         });
       }
 
+      if (productUrls.length === 0) {
+        return failRun({
+          runId: input.runId,
+          probeId,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          outcome: "failed",
+          failureCodes: ["empty_catalog"],
+          catalogWork: { expected: 0, completed: 0 },
+          budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
+        });
+      }
+
       const maxPages =
         probeId !== null
           ? Math.min(CLOSIN_BUDGETS.maxProbePages, productUrls.length)
           : Math.min(CLOSIN_BUDGETS.maxObservationsPerRun, productUrls.length);
 
       const selected = productUrls.slice(0, maxPages);
-      const observations = [];
-      const omissions: {
-        code: string;
-        detail: string | null;
-        sourceUrl: string | null;
-      }[] = [];
+      const observations: RawOfferObservationV2[] = [];
+      const omissions: Omission[] = [];
       const seenKeys = new Set<string>();
+      /** v2: candidates whose work reached a terminal processed/omitted result. */
+      let catalogCompleted = 0;
 
       if (selected.length < productUrls.length) {
         omissions.push({
@@ -347,7 +366,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             failureCodes: ["timeout"],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -360,6 +379,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             detail: "url_too_long",
             sourceUrl: null,
           });
+          catalogCompleted += 1;
           continue;
         }
 
@@ -373,7 +393,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             failureCodes: ["budget_overflow"],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -391,7 +411,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             failureCodes: ["destination_rejected"],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -424,7 +444,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             ],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -479,7 +499,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
                 failureCodes: [mapped],
                 catalogWork: {
                   expected: productUrls.length,
-                  completed: observations.length,
+                  completed: catalogCompleted,
                 },
                 budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
                 omissions,
@@ -490,6 +510,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
               detail: page.code,
               sourceUrl,
             });
+            catalogCompleted += 1;
             continue;
           }
           html = page.body;
@@ -508,7 +529,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             failureCodes: ["budget_overflow"],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -516,7 +537,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
         }
 
         const candidate = extractClosinPdp(html, dest.normalizedHref);
-        budget.candidateCount += 1;
+        // candidateCount is set once at discovery — do not double-count here.
 
         const eligibility = classifyFilamentEligibility({
           titleEvidence: candidate.titleEvidence,
@@ -529,6 +550,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             detail: eligibility.reason,
             sourceUrl: dest.normalizedHref,
           });
+          catalogCompleted += 1;
           continue;
         }
 
@@ -545,6 +567,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             detail: identity.error.code,
             sourceUrl: dest.normalizedHref,
           });
+          catalogCompleted += 1;
           continue;
         }
         if (seenKeys.has(identity.tuple.sourceKey)) {
@@ -553,6 +576,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             detail: identity.tuple.sourceKey,
             sourceUrl: dest.normalizedHref,
           });
+          catalogCompleted += 1;
           continue;
         }
         seenKeys.add(identity.tuple.sourceKey);
@@ -582,6 +606,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
         });
 
         observations.push(observation);
+        catalogCompleted += 1;
         if (observations.length > CLOSIN_BUDGETS.maxObservationsPerRun) {
           return failRun({
             runId: input.runId,
@@ -592,7 +617,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
             failureCodes: ["budget_overflow"],
             catalogWork: {
               expected: productUrls.length,
-              completed: observations.length,
+              completed: catalogCompleted,
             },
             budgetUsage: { ...budget, durationMs: Date.now() - startedMs },
             omissions,
@@ -615,7 +640,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
           failureCodes: ["budget_overflow"],
           catalogWork: {
             expected: productUrls.length,
-            completed: observations.length,
+            completed: catalogCompleted,
           },
           budgetUsage: budget,
           omissions,
@@ -628,7 +653,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
       );
       if (hasFetchFailures || hasTruncation) {
         return {
-          contractVersion: 1,
+          contractVersion: STORE_RUN_EVIDENCE_CONTRACT_VERSION_V2,
           storeId: CLOSIN_STORE_ID,
           runId: input.runId,
           probeId,
@@ -639,7 +664,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
           budgetUsage: budget,
           catalogWork: {
             expected: productUrls.length,
-            completed: observations.length,
+            completed: catalogCompleted,
           },
           outcome: "partial",
           observations,
@@ -651,7 +676,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
       }
 
       return {
-        contractVersion: 1,
+        contractVersion: STORE_RUN_EVIDENCE_CONTRACT_VERSION_V2,
         storeId: CLOSIN_STORE_ID,
         runId: input.runId,
         probeId,
@@ -662,7 +687,7 @@ export function createClosinStoreAdapter(): StoreObservationPort {
         budgetUsage: budget,
         catalogWork: {
           expected: productUrls.length,
-          completed: observations.length,
+          completed: catalogCompleted,
         },
         outcome: "complete",
         observations,

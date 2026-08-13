@@ -3,10 +3,13 @@ import { z } from "zod";
 import { MassGramsSchema, MoneyCentavosSchema, UtcInstantSchema } from "./search-page";
 
 /**
- * RawOfferObservation contract v1.
- * No predecessor version exists; unknown versions and unknown keys are rejected.
+ * RawOfferObservation contract.
+ * v1: Story 1.2 wire — no title/description evidence (discarded at producer).
+ * v2: additive — carries bounded titleEvidence/descriptionEvidence required for
+ * honest Specific Type / Material Family normalization. No silent v1 mutation.
  */
 export const RAW_OFFER_OBSERVATION_CONTRACT_VERSION = 1 as const;
+export const RAW_OFFER_OBSERVATION_CONTRACT_VERSION_V2 = 2 as const;
 export const RAW_OFFER_OBSERVATION_NO_PREDECESSOR = true as const;
 
 export const RAW_TEXT_MAX = 512;
@@ -25,6 +28,7 @@ export type Availability = z.infer<typeof AvailabilitySchema>;
 const BoundedText = z.string().min(1).max(RAW_TEXT_MAX);
 const BoundedUrl = z.string().url().max(RAW_URL_MAX);
 const BoundedId = z.string().min(1).max(RAW_ID_MAX);
+const BoundedTextNullable = BoundedText.nullable();
 
 /**
  * Parsed money: positive integer BRL centavos, or explicit null.
@@ -41,8 +45,7 @@ export const PriceEvidenceSchema = z.strictObject({
 
 export type PriceEvidence = z.infer<typeof PriceEvidenceSchema>;
 
-export const RawOfferObservationSchema = z.strictObject({
-  contractVersion: z.literal(RAW_OFFER_OBSERVATION_CONTRACT_VERSION),
+const ObservationFieldsV1 = {
   storeId: BoundedId,
   runId: BoundedId,
   probeId: BoundedId.nullable(),
@@ -50,21 +53,66 @@ export const RawOfferObservationSchema = z.strictObject({
   merchantVariantId: z.string().max(RAW_VARIANT_MAX).nullable(),
   availability: AvailabilitySchema,
   price: PriceEvidenceSchema,
-  brandEvidence: BoundedText.nullable(),
-  materialEvidence: BoundedText.nullable(),
-  weightEvidence: BoundedText.nullable(),
-  colorEvidence: BoundedText.nullable(),
-  diameterEvidence: BoundedText.nullable(),
+  brandEvidence: BoundedTextNullable,
+  materialEvidence: BoundedTextNullable,
+  weightEvidence: BoundedTextNullable,
+  colorEvidence: BoundedTextNullable,
+  diameterEvidence: BoundedTextNullable,
   /** Positive grams when unambiguously known; null when unknown/ambiguous (e.g. kit). */
   massGrams: MassGramsSchema.nullable(),
   observedAt: UtcInstantSchema,
   mapVersion: z.number().int().positive(),
   parserVersion: z.number().int().positive(),
+} as const;
+
+/** Story 1.2 wire — unchanged. */
+export const RawOfferObservationV1Schema = z.strictObject({
+  contractVersion: z.literal(RAW_OFFER_OBSERVATION_CONTRACT_VERSION),
+  ...ObservationFieldsV1,
 });
 
-export type RawOfferObservation = z.infer<typeof RawOfferObservationSchema>;
+/**
+ * Additive v2: bounded title/description evidence for shared normalize stages.
+ * Producers emit v2 only after v1+v2 consumers are deployed and verified.
+ */
+export const RawOfferObservationV2Schema = z.strictObject({
+  contractVersion: z.literal(RAW_OFFER_OBSERVATION_CONTRACT_VERSION_V2),
+  ...ObservationFieldsV1,
+  titleEvidence: BoundedTextNullable,
+  descriptionEvidence: BoundedTextNullable,
+});
 
-/** v1 has no predecessor decoder — do not invent a fake N-1 alias. */
+export const RawOfferObservationSchema = RawOfferObservationV1Schema;
+
+export type RawOfferObservationV1 = z.infer<typeof RawOfferObservationV1Schema>;
+export type RawOfferObservationV2 = z.infer<typeof RawOfferObservationV2Schema>;
+export type RawOfferObservation = RawOfferObservationV1 | RawOfferObservationV2;
+
+/**
+ * Normalize any accepted observation into the v2 shape used by shared stages.
+ * Missing v1 title/description evidence → explicit null (never invented).
+ */
+export function toObservationV2(
+  observation: RawOfferObservation,
+): RawOfferObservationV2 {
+  if (observation.contractVersion === 2) {
+    return observation;
+  }
+  return {
+    ...observation,
+    contractVersion: RAW_OFFER_OBSERVATION_CONTRACT_VERSION_V2,
+    titleEvidence: null,
+    descriptionEvidence: null,
+  };
+}
+
+export const RawOfferObservationAnySchema = z.discriminatedUnion(
+  "contractVersion",
+  [RawOfferObservationV1Schema, RawOfferObservationV2Schema],
+);
+
+/** Decoders for N and N-1. Unknown/N-2 versions fail closed. */
 export const RawOfferObservationDecoders = {
-  1: RawOfferObservationSchema,
+  1: RawOfferObservationV1Schema,
+  2: RawOfferObservationV2Schema,
 } as const;

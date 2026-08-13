@@ -13,6 +13,7 @@ export default defineConfig(async () => {
           compatibilityFlags: ["nodejs_compat"],
           bindings: {
             RPC_DEADLINE_MS: "2000",
+            RECOVERY_EPOCH: "1",
             TEST_MIGRATIONS: migrations,
           },
         },

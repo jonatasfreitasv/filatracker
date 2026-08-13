@@ -1,11 +1,23 @@
 import { env } from "cloudflare:workers";
 import { data, redirect } from "react-router";
 
-import type { SearchPageRpcOutcome } from "../../src/contracts";
+import {
+  SEARCH_PAGE_CONTRACT_VERSION,
+  SEARCH_CURSOR_MAX_UTF8_BYTES,
+  parseSearchPageQuery,
+  type SearchPageRpcOutcome,
+} from "../../src/contracts";
 import {
   callGetSearchPage,
   nativeFailureToUnavailable,
 } from "../../src/adapters/service-binding/client";
+import { normalizeSearchQuery } from "../../src/domain/search-query";
+import {
+  createSearchLoaderError,
+  type SearchLoaderError,
+} from "./search-error";
+
+export type { SearchLoaderError } from "./search-error";
 
 export const NO_STORE_HEADERS: HeadersInit = {
   "Cache-Control": "no-store",
@@ -21,35 +33,63 @@ export type SearchLoaderSuccess = {
   kind: "ok" | "degraded" | "empty-home" | "no-match";
   outcome: SearchPageRpcOutcome;
   query: string | null;
-};
-
-export type SearchLoaderError = {
-  kind: "invalid" | "unavailable";
-  outcome: SearchPageRpcOutcome;
-  query: string | null;
-  retryAfterSeconds?: number;
+  cursor: string | null;
 };
 
 export type SearchLoaderResult = SearchLoaderSuccess | SearchLoaderError;
 
 function parseSearchParams(request: Request): {
   q?: string;
+  cursor?: string;
   hasInvalidParameters: boolean;
 } {
   const url = new URL(request.url);
   const keys = [...url.searchParams.keys()];
-  const unknown = keys.filter((k) => k !== "q");
+  const allowed = new Set(["q", "cursor"]);
+  const unknown = keys.filter((k) => !allowed.has(k));
   const qAll = url.searchParams.getAll("q");
+  const cursorAll = url.searchParams.getAll("cursor");
 
-  if (unknown.length > 0 || qAll.length > 1) {
-    return { hasInvalidParameters: true, q: qAll[0] };
+  if (unknown.length > 0 || qAll.length > 1 || cursorAll.length > 1) {
+    return { hasInvalidParameters: true, q: qAll[0], cursor: cursorAll[0] };
   }
 
-  if (qAll.length === 0) {
-    return { hasInvalidParameters: false };
+  const cursor = cursorAll[0];
+  if (
+    cursor !== undefined &&
+    new TextEncoder().encode(cursor).byteLength > SEARCH_CURSOR_MAX_UTF8_BYTES
+  ) {
+    return { hasInvalidParameters: true, q: qAll[0], cursor };
   }
 
-  return { hasInvalidParameters: false, q: qAll[0] };
+  return {
+    hasInvalidParameters: false,
+    q: qAll.length === 0 ? undefined : qAll[0],
+    cursor,
+  };
+}
+
+function throwInvalid(
+  query: string | undefined,
+  cursor: string | undefined,
+): never {
+  const outcome: SearchPageRpcOutcome = {
+    outcome: "invalid",
+    contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+    projectionEpoch: 0,
+    supportEpoch: 0,
+    correlationId: crypto.randomUUID(),
+    errors: ["Parâmetros de busca inválidos."],
+  };
+  throw data(
+    createSearchLoaderError({
+      kind: "invalid",
+      outcome,
+      query,
+      cursor,
+    }),
+    noStoreInit({ status: 400 }),
+  );
 }
 
 export async function loadSearchPage(
@@ -59,49 +99,54 @@ export async function loadSearchPage(
   const parsed = parseSearchParams(request);
 
   if (parsed.hasInvalidParameters) {
-    const outcome: SearchPageRpcOutcome = {
-      outcome: "invalid",
-      contractVersion: 1,
-      projectionEpoch: 0,
-      supportEpoch: 0,
-      correlationId: crypto.randomUUID(),
-      errors: ["Parâmetros de busca inválidos."],
-    };
-    throw data(
-      {
-        kind: "invalid",
-        outcome,
-        query: parsed.q ?? null,
-      } satisfies SearchLoaderError,
-      noStoreInit({ status: 400 }),
-    );
+    throwInvalid(parsed.q, parsed.cursor);
   }
 
   const rawQ = parsed.q;
   const trimmed = rawQ?.trim() ?? "";
 
-  if (options.canonicalizeEmptyToHome && trimmed === "") {
+  if (options.canonicalizeEmptyToHome && trimmed === "" && !parsed.cursor) {
     throw redirect("/", 302);
+  }
+
+  // Bound/control-check before Service Binding so oversized or abusive q never
+  // crosses the RPC boundary.
+  if (rawQ !== undefined) {
+    const normalized = normalizeSearchQuery(rawQ);
+    if (!normalized.ok) {
+      throwInvalid(rawQ, parsed.cursor);
+    }
+  }
+
+  const queryBody = {
+    ...(rawQ !== undefined ? { q: rawQ } : {}),
+    ...(parsed.cursor !== undefined ? { cursor: parsed.cursor } : {}),
+  };
+  const validated = parseSearchPageQuery(queryBody);
+  if (!validated.ok) {
+    throwInvalid(rawQ, parsed.cursor);
   }
 
   let outcome: SearchPageRpcOutcome;
   try {
-    outcome = await callGetSearchPage(env.INGEST, {
-      q: rawQ === undefined ? undefined : rawQ,
-    });
-  } catch (error) {
+    outcome = await callGetSearchPage(env.INGEST, validated.query);
+  } catch {
     const correlationId = crypto.randomUUID();
-    console.error("getSearchPage RPC threw", { correlationId, error });
+    console.error("getSearchPage RPC threw", {
+      correlationId,
+      code: "loader_rpc_throw",
+    });
     outcome = nativeFailureToUnavailable(correlationId);
   }
 
   if (outcome.outcome === "invalid") {
     throw data(
-      {
+      createSearchLoaderError({
         kind: "invalid",
         outcome,
-        query: rawQ ?? null,
-      } satisfies SearchLoaderError,
+        query: rawQ,
+        cursor: parsed.cursor,
+      }),
       noStoreInit({ status: 400 }),
     );
   }
@@ -110,12 +155,13 @@ export async function loadSearchPage(
     const headers = new Headers(NO_STORE_HEADERS);
     headers.set("Retry-After", String(outcome.retryAfterSeconds));
     throw data(
-      {
+      createSearchLoaderError({
         kind: "unavailable",
         outcome,
-        query: rawQ ?? null,
+        query: rawQ,
+        cursor: parsed.cursor,
         retryAfterSeconds: outcome.retryAfterSeconds,
-      } satisfies SearchLoaderError,
+      }),
       { status: 503, headers },
     );
   }
@@ -123,27 +169,28 @@ export async function loadSearchPage(
   if (outcome.outcome === "ok" || outcome.outcome === "degraded") {
     const query = outcome.data.query;
     if (query === null) {
-      return { kind: "empty-home", outcome, query };
+      return { kind: "empty-home", outcome, query, cursor: parsed.cursor ?? null };
+    }
+    // degraded + zero hits must NEVER be reclassified as honest no-match.
+    if (outcome.outcome === "degraded") {
+      return { kind: "degraded", outcome, query, cursor: parsed.cursor ?? null };
     }
     if (outcome.data.totalCount === 0) {
-      return { kind: "no-match", outcome, query };
+      return { kind: "no-match", outcome, query, cursor: parsed.cursor ?? null };
     }
-    return {
-      kind: outcome.outcome === "degraded" ? "degraded" : "ok",
-      outcome,
-      query,
-    };
+    return { kind: "ok", outcome, query, cursor: parsed.cursor ?? null };
   }
 
   const headers = new Headers(NO_STORE_HEADERS);
   headers.set("Retry-After", "5");
   throw data(
-    {
+    createSearchLoaderError({
       kind: "unavailable",
       outcome: nativeFailureToUnavailable(crypto.randomUUID()),
-      query: rawQ ?? null,
+      query: rawQ,
+      cursor: parsed.cursor,
       retryAfterSeconds: 5,
-    } satisfies SearchLoaderError,
+    }),
     { status: 503, headers },
   );
 }

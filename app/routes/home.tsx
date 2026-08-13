@@ -75,8 +75,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             {loaderData?.kind === "empty-home" ||
             loaderData?.kind === "no-match" ? (
               <EmptyState
-                title="Nenhum filamento publicado ainda."
-                description="Quando houver ofertas publicadas, os resultados aparecerão aqui."
+                title="Busque um filamento para começar."
+                description="Use o campo acima para encontrar ofertas publicadas entre lojas."
+              />
+            ) : null}
+            {loaderData?.kind === "ok" &&
+            loaderData.outcome.outcome === "ok" &&
+            loaderData.outcome.data.hits.length > 0 ? (
+              <EmptyState
+                title="Busca inicia sem catálogo na Home."
+                description="Use o campo de busca para encontrar filamentos publicados."
               />
             ) : null}
             {loaderData?.kind === "degraded" ? (

@@ -3,7 +3,7 @@
 **Store:** closin  
 **Map/parser:** 1 / 1  
 **Date:** 2026-08-08  
-**Publication activation:** BLOCKED
+**Publication activation:** BLOCKED (operator gate required)
 
 ## Checklist
 
@@ -14,12 +14,13 @@
 - [x] 5. Destination policy pass (incl. Workers DNS pinning limitation recorded)
 - [x] 6. Shared source-identity + filament-eligibility + promotion-policy pass
 - [x] 7. Completeness/run-outcome matrix pass (failed ≠ `[]` success)
-- [x] 8. Adapter capacity artifact pass; **AD-8 D1 proof PENDING Story 1.3**
-- [x] 9. Telemetry allowlist/redaction; sink disabled in 1.2
-- [x] 10. Rollback evidence: Store inactive; version pins; no publish path
+- [x] 8. Adapter capacity artifact pass; **AD-8 D1 proof executed in Story 1.3** (see `capacity-artifact.json` / worker capacity test)
+- [x] 9. Telemetry allowlist/redaction; sink gated with retention rules
+- [x] 10. Rollback evidence: Store inactive by default; activation_gate blocked until operator approval
 
 ## Explicit non-claims
 
-- Story 1.2 does **not** claim the AD-8 D1 publication capacity proof is complete.
-- Closin must not be marked `active` coverage until Story 1.3 + operator activation.
+- Automated Story 1.3 tests do **not** auto-activate Closin.
+- Operator approval + current safe probe remain required before `activation_gate=approved`.
+- Public search remains empty until Story 1.4.
 - No mock production Store source is wired into runtime paths.

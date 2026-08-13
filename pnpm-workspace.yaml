@@ -1,5 +1,6 @@
 packages:
   - .
+  - dev_tools/runz
 engineStrict: true
 overrides:
   "@cloudflare/vite-plugin": "1.51.0"

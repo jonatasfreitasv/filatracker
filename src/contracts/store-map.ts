@@ -61,7 +61,11 @@ export type VariantCoverageRule = z.infer<typeof VariantCoverageRuleSchema>;
 export const CompletenessEvidenceSpecSchema = z.strictObject({
   requiresExpectedCatalogWork: z.literal(true),
   allowsBoundedOmissions: z.boolean(),
+  /** Compiled, capacity-proven upper bound for one discovered catalog. */
+  catalogWorkLimit: z.number().int().positive().max(500),
   omissionCodes: z.array(z.string().min(1).max(64)).max(32),
+  /** Only these failure codes may accompany a positive-only publication. */
+  failureCodes: z.array(z.string().min(1).max(64)).max(32),
 });
 
 export type CompletenessEvidenceSpec = z.infer<

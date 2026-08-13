@@ -1,0 +1,14 @@
+{
+  "id": "pdp-non-filament-printer",
+  "sourceUrl": "https://voolt3d.com.br/produtos/impressora-3d-elegoo-centauri-carbon-combo/",
+  "sanitizerMethod": "ldjson-page-match-strip-images",
+  "expectedOutcome": {
+    "kind": "non_filament",
+    "listingPriceCentavos": null,
+    "variantSku": "IMP-CT-CB-V2"
+  },
+  "contentDigestSha256": "021535ef8ec68c86260822841abfa4bebd3cf126f77223ccf5910f4387a95f9c",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

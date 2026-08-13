@@ -1,7 +1,9 @@
 @import "./design-system/tokens.css";
 @import "./design-system/components.css";
+@import "./design-system/results.css";
 
 @theme {
   --font-sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
 }
+

@@ -1,15 +1,11 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import {
-  SearchPageRpcOutcomeNMinus1Schema,
-  SearchPageRpcOutcomeSchema,
-  SEARCH_PAGE_CONTRACT_VERSION,
-} from "../../src/contracts";
+import { SearchPageRpcOutcomeSchema, SEARCH_PAGE_CONTRACT_VERSION } from "../../src/contracts";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-describe("SearchPage contract N/N-1", () => {
-  const sampleOk = {
+describe("SearchPage initial v2 contract", () => {
+  const sampleOkV2 = {
     outcome: "ok" as const,
     contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
     projectionEpoch: 1,
@@ -20,33 +16,35 @@ describe("SearchPage contract N/N-1", () => {
       hits: [],
       totalCount: 0,
       materialFamilySuggestions: [],
+      storeSupport: [],
+      nextCursor: null,
+      hasNextPage: false,
       limits: {
         maxHits: 50 as const,
         maxQueryScalars: 120 as const,
         maxQueryUtf8Bytes: 512 as const,
+        maxCursorUtf8Bytes: 1024 as const,
       },
     },
   };
 
-  it("decodes current envelope as N", () => {
-    expect(SearchPageRpcOutcomeSchema.parse(sampleOk).outcome).toBe("ok");
+  it("decodes current envelope as N (v2)", () => {
+    expect(SearchPageRpcOutcomeSchema.parse(sampleOkV2).outcome).toBe("ok");
   });
 
-  it("decodes current envelope as N-1 (adjacent baseline)", () => {
-    expect(SearchPageRpcOutcomeNMinus1Schema.parse(sampleOk).outcome).toBe(
-      "ok",
-    );
+  it("rejects pre-launch v1", () => {
+    expect(SearchPageRpcOutcomeSchema.safeParse({ ...sampleOkV2, contractVersion: 1 }).success).toBe(false);
   });
 
-  it("rejects notFound and gone for getSearchPage v1 shape usage in tests", () => {
+  it("rejects notFound and gone for getSearchPage", () => {
     const notFound = {
-      ...sampleOk,
+      ...sampleOkV2,
       outcome: "notFound",
       data: undefined,
     };
     expect(SearchPageRpcOutcomeSchema.safeParse(notFound).success).toBe(false);
 
-    const gone = { ...sampleOk, outcome: "gone", data: undefined };
+    const gone = { ...sampleOkV2, outcome: "gone", data: undefined };
     expect(SearchPageRpcOutcomeSchema.safeParse(gone).success).toBe(false);
   });
 });
@@ -57,7 +55,6 @@ describe("binding-denial: web must not bind D1/queues/schedules/Store secrets", 
       resolve(process.cwd(), "wrangler.web.jsonc"),
       "utf8",
     );
-    // Strip comments for a coarse inventory check
     const jsonish = raw.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
     expect(jsonish).not.toMatch(/"d1_databases"/);

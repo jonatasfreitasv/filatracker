@@ -52,6 +52,7 @@ describe("wrangler.web structural allowlist", () => {
 
     const blob = JSON.stringify(json);
     expect(blob).not.toMatch(/closin/i);
+    expect(blob).not.toMatch(/voolt3d/i);
     expect(blob).not.toMatch(/\bstore\b/i);
     expect(blob).not.toMatch(/probe/i);
     expect(blob).not.toMatch(/d1_databases/i);
@@ -67,13 +68,18 @@ describe("wrangler.web structural allowlist", () => {
     ]);
   });
 
-  it("ingest keeps D1 but does not add Store/probe secrets", () => {
+  it("ingest keeps D1 and queues but does not add Store/probe secrets", () => {
     const raw = readFileSync(resolve("wrangler.ingest.jsonc"), "utf8");
     const json = parseJsonc(raw) as Record<string, unknown>;
     expect(json).toHaveProperty("d1_databases");
+    expect(json).toHaveProperty("queues");
+    expect(json).toHaveProperty("triggers");
     const blob = JSON.stringify(json);
     expect(blob).not.toMatch(/closin/i);
+    expect(blob).not.toMatch(/voolt3d/i);
     expect(blob).not.toMatch(/probe/i);
+    expect(blob).toMatch(/RECOVERY_EPOCH/);
+    expect(blob).toMatch(/filatracker-ingest-dlq/);
   });
 });
 
@@ -82,10 +88,19 @@ describe("ingest import-graph / startup surface", () => {
     const src = readFileSync(resolve("workers/ingest.ts"), "utf8");
     expect(src).not.toMatch(/adapters\/stores/);
     expect(src).not.toMatch(/closin/i);
+    expect(src).not.toMatch(/voolt3d/i);
     expect(src).not.toMatch(/safe-fetch/);
     expect(src).not.toMatch(/robots-policy/);
     expect(src).toMatch(/getSearchPage/);
-    expect(src).not.toMatch(/async\s+(fetchStore|probe|enqueue|schedule)/);
+    expect(src).toMatch(/scheduled/);
+    expect(src).toMatch(/queue/);
+    // Lazy dynamic import only — no static Store coordinator import.
+    expect(src).toMatch(/await import\(/);
+    expect(src).not.toMatch(
+      /^import .*from ["'].*adapters\/(stores|queue)/m,
+    );
+    expect(src).toMatch(/scheduled handler failed", \{ error: "redacted" \}/);
+    expect(src).toMatch(/queue handler failed", \{ error: "redacted" \}/);
   });
 
   it("preserves two-worker topology names", () => {

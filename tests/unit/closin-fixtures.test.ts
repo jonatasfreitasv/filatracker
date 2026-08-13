@@ -8,7 +8,7 @@ import {
   loadFixturePair,
 } from "../helpers/fixture-runner";
 import { extractClosinPdp, extractJsonLdBlocks } from "../../src/adapters/stores/closin/hooks";
-import { RawOfferObservationSchema } from "../../src/contracts";
+import { RawOfferObservationAnySchema } from "../../src/contracts";
 import { assessPromotion } from "../../src/domain/policy/promotion";
 import { classifyFilamentEligibility } from "../../src/domain/policy/filament-eligibility";
 
@@ -138,7 +138,9 @@ describe("Closin homologation fixtures", () => {
     expect(result.outcome).toBe("complete");
     expect(result.observations.length).toBeGreaterThanOrEqual(2);
     for (const obs of result.observations) {
-      expect(RawOfferObservationSchema.parse(obs).storeId).toBe("closin");
+      expect(RawOfferObservationAnySchema.parse(obs).storeId).toBe("closin");
+      expect(obs.contractVersion).toBe(2);
+      expect("titleEvidence" in obs).toBe(true);
     }
     expect(result.omissions.some((o) => o.code === "non_filament")).toBe(true);
     expect(

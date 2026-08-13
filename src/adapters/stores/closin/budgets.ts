@@ -16,8 +16,8 @@ export const CLOSIN_BUDGETS = {
   maxArrayCardinality: 500,
   maxJsonLdNesting: 12,
   maxParserSelectors: 32,
-  maxCandidatesPerRun: 200,
-  maxObservationsPerRun: 150,
+  maxCandidatesPerRun: 134,
+  maxObservationsPerRun: 134,
   /** Measured catalog bound 111 + 20% margin → 134, capped by observations. */
   measuredCatalogBound: 111,
   catalogBoundWithMargin: 134,

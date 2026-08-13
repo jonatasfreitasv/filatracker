@@ -1,0 +1,15 @@
+{
+  "id": "pdp-malformed-price",
+  "sourceUrl": "https://voolt3d.com.br/produtos/filamento-pla-malformed-price-fixture/",
+  "sanitizerMethod": "synthetic-from-live-shape",
+  "expectedOutcome": {
+    "kind": "observation",
+    "listingPriceCentavos": null,
+    "availability": "available",
+    "massGrams": 1000
+  },
+  "contentDigestSha256": "d1a554143ad299bd6fc21d5dd0c9d543df00378ed914b9ae41dd22425753a071",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

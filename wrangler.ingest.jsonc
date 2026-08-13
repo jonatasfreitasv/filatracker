@@ -1,6 +1,7 @@
 /**
  * Non-public ingest/data Worker — sole D1 authority and typed RPC surface.
  * Deploy ingest before web (Service Binding target must exist).
+ * Queues + schedule live here only — never on wrangler.web.jsonc.
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
@@ -15,7 +16,8 @@
 	},
 	"upload_source_maps": true,
 	"vars": {
-		"RPC_DEADLINE_MS": "2000"
+		"RPC_DEADLINE_MS": "2000",
+		"RECOVERY_EPOCH": "1"
 	},
 	"d1_databases": [
 		{
@@ -24,5 +26,25 @@
 			"database_id": "00000000-0000-0000-0000-000000000001",
 			"migrations_dir": "db/migrations"
 		}
-	]
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "INGEST_QUEUE",
+				"queue": "filatracker-ingest-local"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "filatracker-ingest-local",
+				"max_retries": 3,
+				"dead_letter_queue": "filatracker-ingest-dlq-local",
+				"max_batch_size": 5,
+				"max_batch_timeout": 5
+			}
+		]
+	},
+	"triggers": {
+		"crons": ["0 */6 * * *"]
+	}
 }

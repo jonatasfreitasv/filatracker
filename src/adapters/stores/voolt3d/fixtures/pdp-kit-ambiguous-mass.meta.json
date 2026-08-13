@@ -1,0 +1,16 @@
+{
+  "id": "pdp-kit-ambiguous-mass",
+  "sourceUrl": "https://voolt3d.com.br/produtos/kit-pla-preto-em-caixa-master-3kg/",
+  "sanitizerMethod": "ldjson-page-match-strip-images",
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "unavailable",
+    "listingPriceCentavos": 34990,
+    "massGrams": null,
+    "variantSku": "PL-PR-PS-3"
+  },
+  "contentDigestSha256": "7cbadae4c18f9b9e12eb77d8624790163ff50571fff033808abe9542425e38fc",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

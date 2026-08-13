@@ -1,0 +1,55 @@
+{
+  "storeId": "voolt3d",
+  "capturedAt": "2026-08-10T05:58:36.000Z",
+  "method": "GET https://voolt3d.com.br/sitemap.xml ; count <loc> matching /produtos/<slug>/",
+  "evidenceIds": {
+    "sitemap": "catalog-sitemap-excerpt",
+    "sitemapFullDigestNote": "full sitemap measured live 2026-08-10; excerpt fixture holds first 25 product URLs",
+    "robots": "homologation-evidence",
+    "pdpSample": "pdp-pla-branco-dental"
+  },
+  "measuredMaxCatalogVolume": 213,
+  "measuredPdpEncodedBytesApprox": 506754,
+  "safetyMarginPercent": 20,
+  "catalogBoundWithMargin": 256,
+  "chosenBudgets": {
+    "maxEncodedBytesPerFetch": 1500000,
+    "maxObservationsPerRun": 256,
+    "maxCandidatesPerRun": 256,
+    "maxSubrequestsPerRun": 280,
+    "maxConcurrency": 2,
+    "maxWallClockMs": 60000,
+    "maxStagedBytesEstimate": 2000000
+  },
+  "marginCalculation": "ceil(213 * 1.20) = 256; observation/candidate budgets = 256; fetch byte budget 1_500_000 > measured ~0.51MB PDP",
+  "dryRunInputsForStory13": {
+    "description": "Deterministic staged-row/statement/byte estimates for bounded set-based D1 batch() proof (reuse Stories 1.3/1.4 publish+FTS shape).",
+    "ad8ProofStatus": "reuse-story-1-3-1-4-protocol",
+    "maxRowsEstimate": 256,
+    "statementsPerOfferEstimate": 3,
+    "maxStatementsEstimate": 768,
+    "bytesPerRowEstimate": 2048,
+    "maxStagedBytesEstimate": 524288,
+    "fixturePath": "src/adapters/stores/voolt3d/capacity/d1-dry-run-fixture.json",
+    "ad8ProofMethod": "worker capacity batch at catalogBoundWithMargin rows (multi-store isolation suite)",
+    "story14FtsBatchExtension": {
+      "description": "Same set-based publish+FTS fence as Closin; Voolt3D uses identical statement shape, different store_id scope.",
+      "additionalStatementsFixed": 3,
+      "additionalBindsFixed": 7,
+      "plannedRows": 256,
+      "plannedStatementsEstimate": 269,
+      "durationBudgetMs": 30000,
+      "remeasureRequiredBeforeActivation": true,
+      "note": "Do not invent production latency. Worker suite proves isolation + protocol reuse; activation remeasure is operator-gated."
+    }
+  },
+  "workersDnsLimitation": "Cloudflare Workers fetch resolves origin DNS internally; userland cannot pin connections. URL host classification + fail-closed ambiguity are mandatory.",
+  "reviewedDestinationsEvidence": {
+    "apex": "https://voolt3d.com.br/ \u2192 HTTP/2 200",
+    "www": "https://www.voolt3d.com.br/ \u2192 HTTP/2 200 (no forced redirect either way)",
+    "canonicalProductHost": "voolt3d.com.br",
+    "cdnNotAllowlisted": [
+      "acdn-us.mitiendanube.com"
+    ]
+  }
+}

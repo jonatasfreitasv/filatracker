@@ -1,0 +1,47 @@
+{
+  "recordedAt": "2026-08-10T05:33:53.471Z",
+  "telemetry": {
+    "telemetryPolicyVersion": 1,
+    "event": "closin_probe",
+    "storeId": "closin",
+    "runId": "probe-1786340027855",
+    "probeId": "closin-probe-5",
+    "outcome": "quarantined",
+    "observationCount": 0,
+    "candidateCount": 111,
+    "omissionCount": 1,
+    "budgetUsage": {
+      "fetchCount": 3,
+      "redirectHops": 0,
+      "encodedBytes": 85739,
+      "decompressedBytes": 491,
+      "observationCount": 0,
+      "candidateCount": 111,
+      "subrequests": 3,
+      "durationMs": 5611,
+      "stagedByteEstimate": 0,
+      "logEventBytes": 0
+    },
+    "mapVersion": 1,
+    "parserVersion": 1,
+    "durationMs": 5611
+  },
+  "outcome": "quarantined",
+  "catalogWork": {
+    "expected": 111,
+    "completed": 0
+  },
+  "observationCount": 0,
+  "budgetUsage": {
+    "fetchCount": 3,
+    "redirectHops": 0,
+    "encodedBytes": 85739,
+    "decompressedBytes": 491,
+    "observationCount": 0,
+    "candidateCount": 111,
+    "subrequests": 3,
+    "durationMs": 5611,
+    "stagedByteEstimate": 0,
+    "logEventBytes": 0
+  }
+}

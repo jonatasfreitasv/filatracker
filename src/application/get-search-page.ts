@@ -1,43 +1,64 @@
 import {
+  CorrelationIdSchema,
   DEFAULT_RETRY_AFTER_SECONDS,
   SEARCH_PAGE_CONTRACT_VERSION,
-  type SearchPage,
   type SearchPageRpcOutcome,
 } from "../contracts";
-import { normalizeSearchQuery } from "../domain/search-query";
-import type { GetSearchPageInput, SearchCatalogPort } from "./ports";
+import type {
+  GetSearchPageInput,
+  SearchCatalogPort,
+  SearchPageSnapshot,
+} from "./ports";
 
 function newCorrelationId(): string {
   return crypto.randomUUID();
 }
 
-function emptyPage(query: string | null): SearchPage {
-  return {
-    query,
-    hits: [],
-    totalCount: 0,
-    materialFamilySuggestions: [],
-    limits: {
-      maxHits: 50,
-      maxQueryScalars: 120,
-      maxQueryUtf8Bytes: 512,
-    },
-  };
+function logAllowlisted(code: string, correlationId: string): void {
+  console.error("get_search_page", { code, correlationId });
 }
 
 export async function getSearchPage(
   catalog: SearchCatalogPort,
   input: GetSearchPageInput,
 ): Promise<SearchPageRpcOutcome> {
-  const correlationId = newCorrelationId();
+  const suppliedCorrelationId = CorrelationIdSchema.safeParse(input.correlationId);
+  const correlationId = suppliedCorrelationId.success
+    ? suppliedCorrelationId.data
+    : newCorrelationId();
+  const evaluatedAt = new Date();
 
-  let epochs = { projectionEpoch: 0, supportEpoch: 0 };
-  try {
-    epochs = await catalog.getEpochs();
-  } catch (error) {
-    console.error("getEpochs failed", { correlationId, error });
+  if (input.hasInvalidParameters) {
     return {
-      outcome: "unavailable",
+      outcome: "invalid",
+      contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+      projectionEpoch: 0,
+      supportEpoch: 0,
+      correlationId,
+      errors: ["Parâmetros de busca inválidos."],
+    };
+  }
+
+  let snapshot: SearchPageSnapshot;
+  try {
+    snapshot = await catalog.getSearchPageSnapshot({
+      q: input.q,
+      cursor: input.cursor,
+      limit: input.limit,
+      correlationId,
+      evaluatedAt,
+    });
+  } catch (error) {
+    const overloaded =
+      error instanceof Error &&
+      (error.name === "OverloadedError" ||
+        /overloaded|capacity|429/i.test(error.message));
+    logAllowlisted(
+      overloaded ? "catalog_overloaded" : "catalog_unavailable",
+      correlationId,
+    );
+    return {
+      outcome: overloaded ? "overloaded" : "unavailable",
       contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
       projectionEpoch: 0,
       supportEpoch: 0,
@@ -47,61 +68,40 @@ export async function getSearchPage(
   }
 
   const meta = {
-    contractVersion: SEARCH_PAGE_CONTRACT_VERSION as typeof SEARCH_PAGE_CONTRACT_VERSION,
-    projectionEpoch: epochs.projectionEpoch,
-    supportEpoch: epochs.supportEpoch,
+    contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+    projectionEpoch: snapshot.projectionEpoch,
+    supportEpoch: snapshot.supportEpoch,
     correlationId,
-  };
+  } as const;
 
-  if (input.hasInvalidParameters) {
-    return {
-      ...meta,
-      outcome: "invalid",
-      errors: ["Parâmetros de busca inválidos."],
-    };
-  }
-
-  const normalized = normalizeSearchQuery(input.q);
-  if (!normalized.ok) {
-    return {
-      ...meta,
-      outcome: "invalid",
-      errors: ["Revise sua busca e tente novamente."],
-    };
-  }
-
-  try {
-    const result = await catalog.searchPublished(normalized.canonical);
-    return {
-      ...meta,
-      outcome: "ok",
-      data: {
-        ...emptyPage(normalized.canonical),
-        hits: result.hits,
-        totalCount: result.totalCount,
-        materialFamilySuggestions: result.materialFamilySuggestions,
-      },
-    };
-  } catch (error) {
-    const overloaded =
-      error instanceof Error &&
-      (error.name === "OverloadedError" ||
-        /overloaded|capacity|429/i.test(error.message));
-
-    console.error("searchPublished failed", { correlationId, error });
-
-    if (overloaded) {
+  switch (snapshot.outcome) {
+    case "invalid":
       return {
         ...meta,
-        outcome: "overloaded",
+        outcome: "invalid",
+        errors: snapshot.errors,
+      };
+    case "overloaded":
+    case "unavailable":
+      return {
+        ...meta,
+        outcome: snapshot.outcome,
         retryAfterSeconds: DEFAULT_RETRY_AFTER_SECONDS,
       };
-    }
-
-    return {
-      ...meta,
-      outcome: "unavailable",
-      retryAfterSeconds: DEFAULT_RETRY_AFTER_SECONDS,
-    };
+    case "degraded":
+      return {
+        ...meta,
+        outcome: "degraded",
+        data: snapshot.page,
+        qualification:
+          snapshot.qualification ??
+          "Busca em modo degradado — alguns dados podem estar indisponíveis.",
+      };
+    case "ok":
+      return {
+        ...meta,
+        outcome: "ok",
+        data: snapshot.page,
+      };
   }
 }

@@ -4,7 +4,9 @@ import { getSearchPage } from "../src/application/get-search-page";
 import { createD1SearchCatalog } from "../src/adapters/persistence/d1-search-catalog";
 import {
   DEFAULT_RETRY_AFTER_SECONDS,
+  CorrelationIdSchema,
   SEARCH_PAGE_CONTRACT_VERSION,
+  parseSearchPageQuery,
   type SearchPageQuery,
   type SearchPageRpcOutcome,
 } from "../src/contracts";
@@ -14,40 +16,69 @@ export interface IngestEnv {
   RPC_DEADLINE_MS?: string;
   /** Provisioned for later command methods; unused by getSearchPage. */
   RPC_CAPABILITY_SECRET?: string;
+  /** External non-secret recovery epoch authority (AD-24). */
+  RECOVERY_EPOCH?: string;
+  INGEST_QUEUE?: Queue<unknown>;
 }
 
 /**
- * Non-public typed RPC entrypoint. Exposes only getSearchPage in Story 1.1.
- * Do not add Store/schedule/queue/command/generic-fetch handlers here yet.
+ * Non-public typed RPC entrypoint. Exposes only getSearchPage in Story 1.1/1.4.
+ * Store/schedule/queue orchestration is lazy-loaded from the default export only.
  */
 export class IngestService extends WorkerEntrypoint<IngestEnv> {
-  async getSearchPage(query: SearchPageQuery): Promise<SearchPageRpcOutcome> {
+  async getSearchPage(
+    query: SearchPageQuery,
+    suppliedCorrelationId?: string,
+    clientDeadlineMs?: number,
+  ): Promise<SearchPageRpcOutcome> {
     const parsedDeadlineMs = Number(this.env.RPC_DEADLINE_MS);
-    const deadlineMs =
+    const configuredDeadlineMs =
       Number.isFinite(parsedDeadlineMs) && parsedDeadlineMs > 0
         ? parsedDeadlineMs
         : 2000;
+    const clientBudget =
+      typeof clientDeadlineMs === "number" &&
+      Number.isFinite(clientDeadlineMs) &&
+      clientDeadlineMs > 0
+        ? Math.ceil(clientDeadlineMs)
+        : configuredDeadlineMs;
+    const deadlineMs = Math.min(configuredDeadlineMs, clientBudget);
     const catalog = createD1SearchCatalog(this.env.DB);
+    const parsedCorrelationId = CorrelationIdSchema.safeParse(suppliedCorrelationId);
+    const correlationId = parsedCorrelationId.success
+      ? parsedCorrelationId.data
+      : crypto.randomUUID();
+
+    const parsed = parseSearchPageQuery(query ?? {});
+    if (!parsed.ok) {
+      return {
+        outcome: "invalid",
+        contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+        projectionEpoch: 0,
+        supportEpoch: 0,
+        correlationId,
+        errors: parsed.errors,
+      };
+    }
 
     try {
       return await withDeadline(
-        getSearchPage(catalog, { q: query.q }),
+        getSearchPage(catalog, {
+          correlationId,
+          q: parsed.query.q,
+          cursor: parsed.query.cursor,
+          limit: parsed.query.limit,
+        }),
         deadlineMs,
       );
-    } catch (error) {
-      const overloaded =
-        error instanceof Error &&
-        (error.name === "OverloadedError" ||
-          /overloaded|capacity|429/i.test(error.message));
-      const correlationId = crypto.randomUUID();
-
+    } catch {
       console.error("IngestService.getSearchPage failed", {
         correlationId,
-        error,
+        code: "rpc_native_failure",
       });
 
       return {
-        outcome: overloaded ? "overloaded" : "unavailable",
+        outcome: "unavailable",
         contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
         projectionEpoch: 0,
         supportEpoch: 0,
@@ -78,9 +109,52 @@ async function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 /**
  * Non-public Worker: no public HTTP routes.
+ * scheduled/queue handlers lazy-load Store/coordinator paths (no eager Store import).
  */
 export default {
   async fetch() {
     return new Response("Not Found", { status: 404 });
+  },
+
+  async scheduled(controller: ScheduledController, env: IngestEnv) {
+    try {
+      const { handleScheduled } = await import(
+        "../src/adapters/queue/handlers"
+      );
+      if (!env.INGEST_QUEUE || env.RECOVERY_EPOCH === undefined) {
+        console.error("scheduled skipped: missing queue or RECOVERY_EPOCH");
+        return;
+      }
+      await handleScheduled(
+        {
+          DB: env.DB,
+          RECOVERY_EPOCH: env.RECOVERY_EPOCH,
+          INGEST_QUEUE: env.INGEST_QUEUE,
+        },
+        controller.scheduledTime,
+      );
+    } catch {
+      console.error("scheduled handler failed", { error: "redacted" });
+    }
+  },
+
+  async queue(batch: MessageBatch<unknown>, env: IngestEnv) {
+    try {
+      const { handleQueueBatch } = await import(
+        "../src/adapters/queue/handlers"
+      );
+      if (!env.INGEST_QUEUE || env.RECOVERY_EPOCH === undefined) {
+        for (const message of batch.messages) message.retry();
+        return;
+      }
+      await handleQueueBatch(batch, {
+        DB: env.DB,
+        RECOVERY_EPOCH: env.RECOVERY_EPOCH,
+        INGEST_QUEUE: env.INGEST_QUEUE,
+      });
+    } catch {
+      console.error("queue handler failed", { error: "redacted" });
+      for (const message of batch.messages) message.retry();
+    }
   },
 } satisfies ExportedHandler<IngestEnv>;

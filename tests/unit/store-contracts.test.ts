@@ -130,6 +130,6 @@ describe("Store contracts v1 — no predecessor, strict keys", () => {
       ),
     );
     expect(raw.measuredMaxCatalogVolume).toBe(111);
-    expect(raw.dryRunInputsForStory13.ad8ProofStatus).toBe("pending-story-1-3");
+    expect(raw.dryRunInputsForStory13.ad8ProofStatus).toBe("passed-story-1-3");
   });
 });

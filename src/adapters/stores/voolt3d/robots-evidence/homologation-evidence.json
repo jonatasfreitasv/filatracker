@@ -1,0 +1,19 @@
+{
+  "policyVersion": 1,
+  "requestedUrl": "https://voolt3d.com.br/robots.txt",
+  "finalUrl": "https://voolt3d.com.br/robots.txt",
+  "redirects": [],
+  "userAgentToken": "FilaTrackerBot",
+  "bodyDigestSha256": "6b989c05804a566549e7e6a0822cd2ce0a0c51bafaa228546cc8df5d59ed20d2",
+  "capturedAt": "2026-08-10T05:58:36.000Z",
+  "evaluatedPaths": [
+    "/produtos/filamento-pla-branco-dental-premium/",
+    "/sitemap.xml",
+    "/robots.txt"
+  ],
+  "decision": "allow",
+  "matchedRule": null,
+  "mapVersion": 1,
+  "robotsCheckVersion": 1,
+  "note": "Audit evidence only \u2014 production runs must refetch and reevaluate."
+}

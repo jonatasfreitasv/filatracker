@@ -1,0 +1,5 @@
+{
+  "recordedAt": null,
+  "note": "No live probe recorded yet. Run: VOOLT3D_PROBE=1 pnpm run probe:voolt3d",
+  "outcome": null
+}

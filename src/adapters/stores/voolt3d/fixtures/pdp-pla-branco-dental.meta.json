@@ -1,0 +1,19 @@
+{
+  "id": "pdp-pla-branco-dental",
+  "sourceUrl": "https://voolt3d.com.br/produtos/filamento-pla-branco-dental-premium/",
+  "sanitizerMethod": "ldjson-page-match-plus-ls-variants-strip-images",
+  "expectedOutcome": {
+    "kind": "observation",
+    "availability": "available",
+    "listingPriceCentavos": 9558,
+    "originalPriceCentavos": 12499,
+    "massGrams": 1000,
+    "materialEvidence": "PLA",
+    "colorEvidence": "Branco Dental",
+    "variantSku": "PL-BR-DT-1"
+  },
+  "contentDigestSha256": "6ba9071864464e3902228b78f77de84c722cec32e50ba77c96c045c87695b3ae",
+  "capturedAt": "2026-08-10T05:58:00.000Z",
+  "mapVersion": 1,
+  "parserVersion": 1
+}

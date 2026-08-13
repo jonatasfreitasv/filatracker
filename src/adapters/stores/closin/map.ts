@@ -43,6 +43,7 @@ const rawMap = {
   completeness: {
     requiresExpectedCatalogWork: true as const,
     allowsBoundedOmissions: true,
+    catalogWorkLimit: 134,
     omissionCodes: [
       "non_filament",
       "ambiguous_mass_retained",
@@ -51,6 +52,7 @@ const rawMap = {
       "duplicate_source_tuple",
       "catalog_truncated",
     ],
+    failureCodes: ["fetch_failed", "budget_overflow"],
   },
   parserVersion: CLOSIN_PARSER_VERSION,
   pathAllowPrefixes: [
