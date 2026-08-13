@@ -1,12 +1,18 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 
 import { getSearchPage } from "../src/application/get-search-page";
+import { getBrowsePage } from "../src/application/get-browse-page";
 import { createD1SearchCatalog } from "../src/adapters/persistence/d1-search-catalog";
+import { createD1BrowseCatalog } from "../src/adapters/persistence/d1-browse-catalog";
 import {
+  BROWSE_PAGE_CONTRACT_VERSION,
   DEFAULT_RETRY_AFTER_SECONDS,
   CorrelationIdSchema,
   SEARCH_PAGE_CONTRACT_VERSION,
+  parseBrowsePageQuery,
   parseSearchPageQuery,
+  type BrowsePageQuery,
+  type BrowsePageRpcOutcome,
   type SearchPageQuery,
   type SearchPageRpcOutcome,
 } from "../src/contracts";
@@ -22,7 +28,7 @@ export interface IngestEnv {
 }
 
 /**
- * Non-public typed RPC entrypoint. Exposes only getSearchPage in Story 1.1/1.4.
+ * Non-public typed RPC entrypoint. getSearchPage + getBrowsePage (Story 1.6).
  * Store/schedule/queue orchestration is lazy-loaded from the default export only.
  */
 export class IngestService extends WorkerEntrypoint<IngestEnv> {
@@ -68,6 +74,7 @@ export class IngestService extends WorkerEntrypoint<IngestEnv> {
           q: parsed.query.q,
           cursor: parsed.query.cursor,
           limit: parsed.query.limit,
+          type: parsed.query.type,
         }),
         deadlineMs,
       );
@@ -80,6 +87,70 @@ export class IngestService extends WorkerEntrypoint<IngestEnv> {
       return {
         outcome: "unavailable",
         contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+        projectionEpoch: 0,
+        supportEpoch: 0,
+        correlationId,
+        retryAfterSeconds: DEFAULT_RETRY_AFTER_SECONDS,
+      };
+    }
+  }
+
+  async getBrowsePage(
+    query: BrowsePageQuery,
+    suppliedCorrelationId?: string,
+    clientDeadlineMs?: number,
+  ): Promise<BrowsePageRpcOutcome> {
+    const parsedDeadlineMs = Number(this.env.RPC_DEADLINE_MS);
+    const configuredDeadlineMs =
+      Number.isFinite(parsedDeadlineMs) && parsedDeadlineMs > 0
+        ? parsedDeadlineMs
+        : 2000;
+    const clientBudget =
+      typeof clientDeadlineMs === "number" &&
+      Number.isFinite(clientDeadlineMs) &&
+      clientDeadlineMs > 0
+        ? Math.ceil(clientDeadlineMs)
+        : configuredDeadlineMs;
+    const deadlineMs = Math.min(configuredDeadlineMs, clientBudget);
+    const catalog = createD1BrowseCatalog(this.env.DB);
+    const parsedCorrelationId = CorrelationIdSchema.safeParse(suppliedCorrelationId);
+    const correlationId = parsedCorrelationId.success
+      ? parsedCorrelationId.data
+      : crypto.randomUUID();
+
+    const parsed = parseBrowsePageQuery(query ?? {});
+    if (!parsed.ok) {
+      return {
+        outcome: "invalid",
+        contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
+        projectionEpoch: 0,
+        supportEpoch: 0,
+        correlationId,
+        errors: parsed.errors,
+      };
+    }
+
+    try {
+      return await withDeadline(
+        getBrowsePage(catalog, {
+          correlationId,
+          kind: parsed.query.kind,
+          slug: parsed.query.slug,
+          cursor: parsed.query.cursor,
+          limit: parsed.query.limit,
+          type: parsed.query.type,
+        }),
+        deadlineMs,
+      );
+    } catch {
+      console.error("IngestService.getBrowsePage failed", {
+        correlationId,
+        code: "rpc_native_failure",
+      });
+
+      return {
+        outcome: "unavailable",
+        contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
         projectionEpoch: 0,
         supportEpoch: 0,
         correlationId,

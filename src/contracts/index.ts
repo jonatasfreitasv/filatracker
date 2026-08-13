@@ -4,6 +4,7 @@
 
 export {
   SEARCH_PAGE_CONTRACT_VERSION,
+  SEARCH_PAGE_CONTRACT_VERSION_V2,
   SEARCH_QUERY_MAX_SCALARS,
   SEARCH_QUERY_MAX_UTF8_BYTES,
   SEARCH_CURSOR_MAX_UTF8_BYTES,
@@ -31,14 +32,19 @@ export {
   StoreSupportStateDisplaySchema,
   SearchPageQuerySchema,
   SearchPageQueryV2Schema,
+  SearchPageQueryV3Schema,
   SearchPageSchema,
   SearchPageV2Schema,
+  SearchPageV3Schema,
+  BrandSuggestionSchema,
+  SpecificTypeFacetSchema,
   SearchHitSchema,
   SearchHitV2Schema,
   MaterialFamilySuggestionSchema,
   StoreSupportSummarySchema,
   SearchPageRpcOutcomeSchema,
   SearchPageRpcOutcomeV2Schema,
+  SearchPageRpcOutcomeV3Schema,
   SearchPageAllowedOutcomeSchema,
   RpcOutcomeKindSchema,
   RpcOutcomeNotFoundSchema,
@@ -50,14 +56,19 @@ export {
 export type {
   SearchPage,
   SearchPageV2,
+  SearchPageV3,
   SearchPageQuery,
   SearchPageQueryV2,
+  SearchPageQueryV3,
   SearchHit,
   SearchHitV2,
   MaterialFamilySuggestion,
+  BrandSuggestion,
+  SpecificTypeFacet,
   StoreSupportSummary,
   SearchPageRpcOutcome,
   SearchPageRpcOutcomeV2,
+  SearchPageRpcOutcomeV3,
   RpcOutcomeKind,
   SearchPageAllowedOutcome,
   RpcEnvelopeMeta,
@@ -196,3 +207,23 @@ export type {
   StoreLifecycleTransition,
   StoreLifecycleActor,
 } from "./store-health";
+
+export {
+  BROWSE_PAGE_CONTRACT_VERSION,
+  BROWSE_PAGE_CONTRACT_NO_PREDECESSOR,
+  BROWSE_LIMITS,
+  BrowsePageQuerySchema,
+  BrowsePageSchema,
+  BrowseEntitySchema,
+  BrowsePageRpcOutcomeSchema,
+  BrowsePageAllowedOutcomeSchema,
+  parseBrowsePageQuery,
+  decodeBrowsePageRpcOutcome,
+} from "./browse-page";
+
+export type {
+  BrowsePageQuery,
+  BrowsePage,
+  BrowseEntity,
+  BrowsePageRpcOutcome,
+} from "./browse-page";

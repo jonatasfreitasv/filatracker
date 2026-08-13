@@ -12,7 +12,7 @@ Production Cloudflare account credentials for deploy/migrate are held only by th
 
 ## Prerequisites
 
-1. CI green on the candidate commit (typecheck, lint, unit, strict SearchPage v2 contract, worker integration, binding-denial, contrast, a11y/responsive contracts).
+1. CI green on the candidate commit (typecheck, lint, unit, SearchPage v3 + v2 hydrate, BrowsePage v1, worker integration, binding-denial, contrast, a11y/responsive contracts).
 2. `RPC_CAPABILITY_SECRET` generated per deployment and stored only as an encrypted Worker secret (never in git, logs, or client bundles).
 3. Production D1 created; note the **immutable database name** (not the binding name) for migration commands.
 
@@ -39,8 +39,8 @@ Never point local/CI credentials at production D1.
 
 ## Deploy order (mandatory)
 
-1. Apply D1 migrations (including `0003_search_fts.sql` and `0004_voolt3d_store_state.sql`) to the immutable DB name.
-2. Deploy **ingest** first with strict SearchPage **v2** acceptance (the initial pre-launch wire):
+1. Apply D1 migrations (including `0003_search_fts.sql`, `0004_voolt3d_store_state.sql`, and additive `0005_taxonomy.sql`) to the immutable DB name.
+2. Deploy **ingest** first so `getBrowsePage` exists on the callee before web callers. SearchPage producer is **v3**; web still hydrates released v2:
 
 ```bash
 pnpm run deploy:ingest
@@ -48,7 +48,7 @@ pnpm run deploy:ingest
 
 3. Canary real published search + FTS/relational fallback against production ingest
    before activating web traffic.
-4. Deploy **web** (emits/depends on SearchPage v2):
+4. Deploy **web** (accepts SearchPage v2|v3; hydrates v2 `brandSuggestions=[]` / `specificTypeFacet=[]`):
 
 ```bash
 pnpm run deploy:web
@@ -72,7 +72,8 @@ Rotate by putting a new value and redeploying ingest then web. Never echo secret
 
 After ingest deploy, before or during web activation:
 
-1. Confirm `getSearchPage` returns typed `RpcOutcome` for empty Home (`ok`, zero hits, null query).
+1. Confirm `getBrowsePage` canary (ingest-first): known family/brand slug → `ok`; unknown → `notFound`; reviewed alias → web 301; split slug → `gone`. Never log raw slugs.
+1b. Confirm `getSearchPage` returns typed `RpcOutcome` for empty Home (`ok`, zero hits, null query).
 2. Confirm a known published Closin query returns `offer` hits with Store text name and no CTAs.
 3. Confirm a dual-Store canary (Closin + Voolt3D, when both are operator-activated) returns
    separate `offer` rows with distinct `storeId` / Store text names — never Merge, never
@@ -87,8 +88,8 @@ After ingest deploy, before or during web activation:
 ## Rollback
 
 1. Roll back **web** first to the previous Workers version (immediate).
-2. SearchPage v2 is the initial contract; roll ingest back with web if the RPC changes.
-3. Do not drop FTS slots, `listing_title`, or `search_text` columns during rollback.
+2. SearchPage **v3** is current and **v2** remains the hydrate predecessor; roll ingest back with web if the RPC changes. Do not leave a v3 producer serving a web build that cannot hydrate v2|v3.
+3. Do not drop FTS slots, `listing_title`, `search_text`, or taxonomy tables/columns from `0005_taxonomy.sql` during rollback. Rolling back 0005 is a restore-to-prior-backup operation, not a DROP.
 4. Introduce N/N-1 compatibility only after the first released SearchPage version exists.
 5. Do not partially disable CI gates or substitute mocks to “restore” traffic.
 

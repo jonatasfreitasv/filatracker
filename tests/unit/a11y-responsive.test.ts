@@ -84,10 +84,12 @@ describe("a11y & responsive contracts", () => {
     expect(home).toMatch(/SearchControl/);
   });
 
-  it("omits Materiais/Marcas until Story 1.6", () => {
-    expect(home).not.toMatch(/Materiais/);
-    expect(home).not.toMatch(/Marcas/);
-    expect(search).not.toMatch(/Materiais/);
-    expect(search).not.toMatch(/Marcas/);
+  it("exposes labeled Materiais/Marcas nav from published entities", () => {
+    expect(components).toMatch(/aria-label="Navegação principal"/);
+    expect(components).toMatch(/Materiais/);
+    expect(components).toMatch(/Marcas/);
+    expect(components).toMatch(/\/materials\/\$\{item\.slug\}/);
+    expect(components).toMatch(/\/brands\/\$\{item\.slug\}/);
+    expect(components).not.toMatch(/href="#"/);
   });
 });

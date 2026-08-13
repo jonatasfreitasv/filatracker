@@ -11,5 +11,7 @@ export {
   ResultsTable,
   OfferRow,
   SuggestionChips,
+  ContextChips,
+  TypeFacetChips,
   QualificationBanner,
 } from "./results";

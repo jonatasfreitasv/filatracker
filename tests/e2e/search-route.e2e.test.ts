@@ -144,6 +144,7 @@ describe("real /search SSR → Service Binding → ingest Worker → D1", () => 
         expect(await page.locator("tbody tr").first().locator(".ft-meta-label").allTextContents()).toEqual([
           "Marca",
           "Material",
+          "Tipo específico",
           "Cor",
           "Diâmetro",
           "Peso",
@@ -170,6 +171,61 @@ describe("real /search SSR → Service Binding → ingest Worker → D1", () => 
     expect(await page.locator('input[type="search"]').inputValue()).toBe("!!!");
     await page.close();
   }, 40_000);
+
+  it("walks Home chip to family browse, brand nav, and family-intent search", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await page.goto(`${harness.baseUrl}/`, { waitUntil: "networkidle" });
+    expect(await page.getByRole("navigation", { name: "Navegação principal" }).count()).toBe(1);
+    const petgChip = page.getByRole("link", { name: "PETG" }).first();
+    await petgChip.click();
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).pathname).toBe("/materials/petg");
+    expect(await page.locator("table.ft-results-table tbody tr").count()).toBeGreaterThan(0);
+    expect(await page.getByText("Tipo específico").count()).toBeGreaterThan(0);
+    expect(await page.getByText("PETG HF").count()).toBeGreaterThan(0);
+    expect(await page.getByText("Ver preços").count()).toBe(0);
+    expect(await page.locator("img").count()).toBe(0);
+
+    await page.getByRole("navigation", { name: "Navegação principal" })
+      .locator("summary")
+      .filter({ hasText: "Marcas" })
+      .click();
+    await page.getByRole("link", { name: "Voolt3D" }).click();
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).pathname).toBe("/brands/voolt3d");
+
+    await page.goto(`${harness.baseUrl}/search?q=PETG`, { waitUntil: "networkidle" });
+    expect(await page.getByRole("status").filter({ hasText: /resultado/ }).count()).toBeGreaterThan(0);
+    const typeChip = page.getByRole("link", { name: /PETG HF/ });
+    expect(await typeChip.count()).toBeGreaterThan(0);
+    await typeChip.first().click();
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).searchParams.get("type")).toBe("petg-hf");
+    await page.getByRole("link", { name: /Remover Busca PETG/ }).click();
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).pathname).toBe("/search");
+    expect(new URL(page.url()).searchParams.get("q")).toBeNull();
+    expect(new URL(page.url()).searchParams.get("type")).toBe("petg-hf");
+    await page.getByRole("link", { name: /Remover Tipo específico/ }).click();
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).searchParams.get("type")).toBeNull();
+    await page.close();
+  }, 40_000);
+
+  it("permanently redirects reviewed aliases and returns 410/404 for gone/unknown slugs", async () => {
+    const alias = await fetch(`${harness.baseUrl}/brands/voolt`, { redirect: "manual" });
+    expect(alias.status).toBe(301);
+    expect(alias.headers.get("location")).toBe("/brands/voolt3d");
+    expect(alias.headers.get("cache-control")).toBe("no-store");
+
+    const gone = await fetch(`${harness.baseUrl}/materials/split-petg`, { redirect: "manual" });
+    expect(gone.status).toBe(410);
+    expect(gone.headers.get("cache-control")).toBe("no-store");
+
+    const unknown = await fetch(`${harness.baseUrl}/materials/no-such-family`, { redirect: "manual" });
+    expect(unknown.status).toBe(404);
+    expect(unknown.headers.get("cache-control")).toBe("no-store");
+  }, 20_000);
 
   it("supports keyboard focus with a visible ring", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

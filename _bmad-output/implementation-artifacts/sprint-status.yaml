@@ -1,5 +1,5 @@
 # generated: 2026-08-08
-# last_updated: 2026-08-10
+# last_updated: 2026-08-13
 # project: filatracker
 # project_key: NOKEY
 # tracking_system: file-system
@@ -54,7 +54,7 @@ development_status:
   1-3-publish-closin-through-the-deterministic-pipeline: done
   1-4-search-published-closin-offers-end-to-end: done
   1-5-search-across-two-real-stores: done
-  1-6-discover-by-material-family-and-brand: backlog
+  1-6-discover-by-material-family-and-brand: done
   epic-1-retrospective: optional
 
   epic-2: backlog

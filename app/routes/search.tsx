@@ -1,5 +1,6 @@
 import type { Route } from "./+types/search";
 import {
+  ContextChips,
   EmptyState,
   ErrorState,
   LoadingRows,
@@ -7,12 +8,13 @@ import {
   ResultsTable,
   Shell,
   SuggestionChips,
+  TypeFacetChips,
 } from "../design-system";
 import {
   loadSearchPage,
   type SearchLoaderError,
 } from "../lib/search-loader";
-import { buildSearchRetryPath } from "../lib/search-url";
+import { buildSearchHref, buildSearchRetryPath } from "../lib/search-url";
 import {
   isRouteErrorResponse,
   useNavigation,
@@ -45,6 +47,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function SearchPage({ loaderData }: Route.ComponentProps) {
   const query = loaderData.query ?? "";
+  const type = loaderData.type ?? null;
   const navigation = useNavigation();
   const isLoading = navigation.state === "loading";
 
@@ -72,11 +75,36 @@ export default function SearchPage({ loaderData }: Route.ComponentProps) {
   ) ?? [];
   const nextPageHref =
     pageData?.hasNextPage && pageData.nextCursor
-      ? `/search?${new URLSearchParams({ q: query, cursor: pageData.nextCursor })}`
+      ? buildSearchHref({ q: query, type, cursor: pageData.nextCursor })
       : null;
 
+  const contextChips = [
+    ...(query
+      ? [{
+          key: "q",
+          facet: "Busca",
+          value: query,
+          removeHref: type ? buildSearchHref({ type }) : "/",
+        }]
+      : []),
+    ...(type
+      ? [{
+          key: "type",
+          facet: "Tipo específico",
+          value:
+            pageData?.specificTypeFacet.find((facet) => facet.slug === type)?.label ??
+            type,
+          removeHref: buildSearchHref({ q: query }),
+        }]
+      : []),
+  ];
+
   return (
-    <Shell searchDefaultValue={query}>
+    <Shell
+      searchDefaultValue={query}
+      materialFamilies={pageData?.materialFamilySuggestions}
+      brands={pageData?.brandSuggestions}
+    >
       <h1 className="ft-visually-hidden">Busca de filamentos</h1>
       {isLoading ? (
         <LoadingRows />
@@ -94,6 +122,15 @@ export default function SearchPage({ loaderData }: Route.ComponentProps) {
             <QualificationBanner>
               {`Resultados incluem ${degradedStores.length === 1 ? "a loja" : "as lojas"} ${degradedStores.map((store) => store.displayName).join(", ")}, ${degradedStores.length === 1 ? "que está" : "que estão"} com suporte degradado.`}
             </QualificationBanner>
+          ) : null}
+
+          <ContextChips chips={contextChips} />
+          {pageData ? (
+            <TypeFacetChips
+              facets={pageData.specificTypeFacet}
+              activeSlug={type}
+              hrefFor={(slug) => buildSearchHref({ q: query, type: slug })}
+            />
           ) : null}
 
           {isNoMatch ? (
@@ -155,7 +192,7 @@ export function ErrorBoundary() {
     }
 
     if (error.status === 503) {
-      const retryPath = buildSearchRetryPath(payload?.query, payload?.cursor);
+      const retryPath = buildSearchRetryPath(payload?.query, payload?.cursor, payload?.type);
       return (
         <Shell searchDefaultValue={preservedQuery}>
           <h1 className="ft-visually-hidden">Busca de filamentos</h1>

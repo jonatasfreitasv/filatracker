@@ -1,6 +1,7 @@
 /**
- * Opaque versioned search cursor (Story 1.4).
- * Binds last sort tuple + compact query digest + parser/index versions + epochs + page limit.
+ * Opaque versioned search/browse cursor (Story 1.6).
+ * Binds last sort tuple + query digest + intent + type + taxonomy version
+ * + parser/index versions + epochs + page limit.
  */
 
 import {
@@ -19,9 +20,14 @@ export type SearchSortTuple = {
   offerId: string;
 };
 
+export type SearchIntentKind = "text" | "family" | "type" | "browse-family" | "browse-brand";
+
 export type SearchCursorPayload = {
-  v: 1;
+  v: 2;
   queryDigest: string;
+  intentKind: SearchIntentKind;
+  typeSlug: string | null;
+  taxonomyVersion: number;
   parserVersion: number;
   indexVersion: number;
   projectionEpoch: number;
@@ -34,8 +40,11 @@ export type SearchCursorPayload = {
 
 const SafeEpochSchema = z.number().int().safe().nonnegative();
 const SearchCursorPayloadSchema = z.strictObject({
-  v: z.literal(1),
+  v: z.literal(2),
   queryDigest: z.string().regex(/^[0-9a-f]{16}$/),
+  intentKind: z.enum(["text", "family", "type", "browse-family", "browse-brand"]),
+  typeSlug: z.string().min(1).max(128).nullable(),
+  taxonomyVersion: SafeEpochSchema,
   parserVersion: z.literal(SEARCH_PARSER_VERSION),
   indexVersion: z.literal(SEARCH_INDEX_VERSION),
   projectionEpoch: SafeEpochSchema,
@@ -87,7 +96,7 @@ export function decodeSearchCursor(
     const value = JSON.parse(json) as unknown;
     if (
       value !== null && typeof value === "object" && "v" in value &&
-      (value as { v: unknown }).v !== 1
+      (value as { v: unknown }).v !== 2
     ) {
       return { ok: false, reason: "version" };
     }
@@ -105,6 +114,9 @@ export function cursorMatchesContext(
   payload: SearchCursorPayload,
   ctx: {
     queryDigest: string;
+    intentKind: SearchIntentKind;
+    typeSlug: string | null;
+    taxonomyVersion: number;
     projectionEpoch: number;
     supportEpoch: number;
     searchWriteGeneration: number;
@@ -113,6 +125,9 @@ export function cursorMatchesContext(
 ): boolean {
   return (
     payload.queryDigest === ctx.queryDigest &&
+    payload.intentKind === ctx.intentKind &&
+    payload.typeSlug === ctx.typeSlug &&
+    payload.taxonomyVersion === ctx.taxonomyVersion &&
     payload.parserVersion === SEARCH_PARSER_VERSION &&
     payload.indexVersion === SEARCH_INDEX_VERSION &&
     payload.projectionEpoch === ctx.projectionEpoch &&

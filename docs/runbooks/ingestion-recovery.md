@@ -49,7 +49,10 @@ D1 export does **not** support databases containing virtual tables.
    while retaining `search_projection_meta` and relational SoT.
 2. **Export / import** the relational database.
 3. **After import:** recreate FTS virtual tables (see `db/migrations/0003_search_fts.sql`),
-   run `rebuildSearchFtsShadow` from relational SoT under captured projection epoch +
-   search-write generation, validate ordered identity set, CAS-activate the shadow slot,
-   and only then resume search traffic.
+   run `rebuildSearchFtsShadow` (FTS-only restore) or `rebuildTaxonomyAndFtsShadow`
+   (taxonomy version cutover) from relational SoT under captured projection epoch +
+   taxonomy_version + search-write generation, validate ordered identity set, CAS-activate
+   the shadow slot together with `taxonomy_version`, and only then resume search/browse
+   traffic. Mixed taxonomy versions must not become public. Coverage copy still forbids
+   claiming five Stores.
 4. Never serve reads from a partially built shadow slot.

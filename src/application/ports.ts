@@ -1,4 +1,9 @@
-import type { SearchPage, SearchPageRpcOutcome } from "../contracts";
+import type {
+  BrowsePage,
+  BrowsePageRpcOutcome,
+  SearchPage,
+  SearchPageRpcOutcome,
+} from "../contracts";
 import type { StoreRunEvidence } from "../contracts/store-run-evidence";
 import type { StoreHealth } from "../contracts/store-health";
 import type { DestinationPolicyConfig } from "./destination-policy";
@@ -14,6 +19,8 @@ export type SearchPageSnapshotInput = {
   q?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
+  /** Formulation specific-type slug narrowing (SearchPage v3). */
+  type?: string | undefined;
   correlationId: string;
   /** Single evaluation instant for stale/freshness across the page. */
   evaluatedAt: Date;
@@ -59,11 +66,71 @@ export type GetSearchPageInput = {
   q?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
+  type?: string | undefined;
   /** True when request carried unknown/repeated query parameters. */
   hasInvalidParameters?: boolean;
 };
 
 export type GetSearchPageResult = SearchPageRpcOutcome;
+
+export type BrowsePageSnapshotInput = {
+  kind: "material" | "brand";
+  slug: string;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  type?: string | undefined;
+  correlationId: string;
+  evaluatedAt: Date;
+};
+
+export type BrowsePageSnapshot =
+  | {
+      outcome: "ok" | "degraded";
+      projectionEpoch: number;
+      supportEpoch: number;
+      searchWriteGeneration: number;
+      page: BrowsePage;
+      qualification: string | null;
+    }
+  | {
+      outcome: "invalid";
+      projectionEpoch: number;
+      supportEpoch: number;
+      searchWriteGeneration: number;
+      errors: string[];
+    }
+  | {
+      outcome: "notFound" | "gone" | "overloaded" | "unavailable";
+      projectionEpoch: number;
+      supportEpoch: number;
+      searchWriteGeneration: number;
+    }
+  | {
+      outcome: "redirect";
+      projectionEpoch: number;
+      supportEpoch: number;
+      searchWriteGeneration: number;
+      canonicalSlug: string;
+      kind: "material" | "brand";
+    };
+
+export interface BrowseCatalogPort {
+  getBrowsePageSnapshot(
+    input: BrowsePageSnapshotInput,
+  ): Promise<BrowsePageSnapshot>;
+}
+
+export type GetBrowsePageInput = {
+  correlationId?: string | undefined;
+  kind: "material" | "brand";
+  slug: string;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  type?: string | undefined;
+  hasInvalidParameters?: boolean;
+};
+
+export type GetBrowsePageResult = BrowsePageRpcOutcome;
 
 /**
  * Destination-policy port (AD-20): HTTPS, exact hosts/ports, public DNS,

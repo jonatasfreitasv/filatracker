@@ -7,7 +7,9 @@ import {
   setStoreDisplayName,
   transitionStoreSupport,
 } from "../../src/adapters/persistence/store-health";
+import { createD1BrowseCatalog } from "../../src/adapters/persistence/d1-browse-catalog";
 import { createD1SearchCatalog } from "../../src/adapters/persistence/d1-search-catalog";
+import { getBrowsePage } from "../../src/application/get-browse-page";
 import { getSearchPage } from "../../src/application/get-search-page";
 import {
   createRun,
@@ -602,6 +604,16 @@ describe("Story 1.5 multi-Store publication isolation + search", () => {
     if (page.outcome !== "ok") return;
     expect(page.data.hits.every((h) => h.storeId === "closin")).toBe(true);
     expect(page.data.hits.some((h) => h.storeId === "voolt3d")).toBe(false);
+
+    const browse = await getBrowsePage(createD1BrowseCatalog(env.DB), {
+      kind: "material",
+      slug: "pla",
+    });
+    expect(browse.outcome).toBe("ok");
+    if (browse.outcome === "ok") {
+      expect(browse.data.hits.every((h) => h.storeId === "closin")).toBe(true);
+      expect(browse.data.hits.some((h) => h.storeId === "voolt3d")).toBe(false);
+    }
   });
 
   it("records Voolt3D capacity bound with ≥20% margin for AD-8 reuse", () => {

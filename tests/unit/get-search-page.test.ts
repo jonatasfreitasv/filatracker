@@ -17,6 +17,8 @@ function emptyPage(query: string | null): SearchPage {
     hits: [],
     totalCount: 0,
     materialFamilySuggestions: [],
+    brandSuggestions: [],
+    specificTypeFacet: [],
     storeSupport: [],
     nextCursor: null,
     hasNextPage: false,

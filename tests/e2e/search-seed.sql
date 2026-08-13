@@ -44,9 +44,9 @@ SELECT
   printf('E2E%03d', n),
   printf('semantic-v1|e2e=%03d', n),
   1,
-  'Marca de teste',
+  CASE WHEN n % 17 = 0 THEN 'Voolt3D' ELSE 'Marca de teste' END,
   'filament',
-  CASE WHEN n % 2 = 0 THEN 'PETG' ELSE 'PLA' END,
+  CASE WHEN n % 5 = 0 THEN 'PETG' WHEN n % 2 = 0 THEN 'PETG' ELSE 'PLA' END,
   CASE WHEN n % 2 = 0 THEN 'Preto' ELSE 'Branco' END,
   '1.75',
   1000,
@@ -118,6 +118,29 @@ SELECT
   printf('Filamento PLA Voolt Dual %02d', n),
   printf('filamento pla voolt dualstore marca voolt3d produto %02d', n)
 FROM vcatalog;
+
+UPDATE offers
+SET
+  brand_id = CASE brand WHEN 'Voolt3D' THEN 'brd_voolt3d' ELSE NULL END,
+  material_family_id = CASE material_family
+    WHEN 'PLA' THEN 'fam_pla'
+    WHEN 'PETG' THEN 'fam_petg'
+    ELSE NULL
+  END,
+  formulation_specific_type_id = CASE
+    WHEN offer_id = 'e2e_offer_010' THEN 'typ_petg-hf'
+    WHEN material_family = 'PLA' THEN 'typ_pla'
+    WHEN material_family = 'PETG' THEN 'typ_petg'
+    ELSE NULL
+  END;
+
+UPDATE offers
+SET listing_title = 'Filamento PETG HF 010',
+    search_text = 'filamento petg petg-hf petghf marca teste produto 010 fallback'
+WHERE offer_id = 'e2e_offer_010';
+
+INSERT INTO taxonomy_gone (gone_slug, kind, taxonomy_version, reason)
+VALUES ('split-petg', 'family', 1, 'reviewed-split');
 
 INSERT INTO search_fts_a (offer_id, search_text)
 SELECT offer_id, replace(search_text, 'fallback ', '')

@@ -1,7 +1,9 @@
 import { z } from "zod";
 
-/** Current SearchPage wire version (Story 1.4). */
-export const SEARCH_PAGE_CONTRACT_VERSION = 2 as const;
+/** Current SearchPage wire version (Story 1.6 additive v3). */
+export const SEARCH_PAGE_CONTRACT_VERSION = 3 as const;
+/** Released predecessor — web still hydrates v2 pages. */
+export const SEARCH_PAGE_CONTRACT_VERSION_V2 = 2 as const;
 
 export const SEARCH_QUERY_MAX_SCALARS = 120;
 export const SEARCH_QUERY_MAX_UTF8_BYTES = 512;
@@ -115,22 +117,37 @@ export const SearchPageQueryV2Schema = z.strictObject({
 
 export type SearchPageQueryV2 = z.infer<typeof SearchPageQueryV2Schema>;
 
-/** Current query shape (v2). */
-export const SearchPageQuerySchema = SearchPageQueryV2Schema;
-export type SearchPageQuery = SearchPageQueryV2;
+const TypeSlugSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+
+/** Strict v3 request — additive optional formulation type slug. */
+export const SearchPageQueryV3Schema = z.strictObject({
+  q: QueryTextSchema.optional(),
+  cursor: CursorSchema.optional(),
+  limit: z.number().int().positive().max(SEARCH_PAGE_MAX_HITS).optional(),
+  type: TypeSlugSchema.optional(),
+});
+
+export type SearchPageQueryV3 = z.infer<typeof SearchPageQueryV3Schema>;
+
+/** Current query shape (v3). */
+export const SearchPageQuerySchema = SearchPageQueryV3Schema;
+export type SearchPageQuery = SearchPageQueryV3;
 
 /**
- * Accept only the initial v2 request body. Compatibility starts after the
- * first released SearchPage wire; pre-launch v1 values fail closed.
+ * Accept v3 (and v2-shaped bodies without `type`). Unknown keys fail closed.
  */
 export function parseSearchPageQuery(
   raw: unknown,
 ):
   | { ok: true; query: SearchPageQuery }
   | { ok: false; errors: string[] } {
-  const v2 = SearchPageQueryV2Schema.safeParse(raw);
-  if (v2.success) {
-    return { ok: true, query: v2.data };
+  const v3 = SearchPageQueryV3Schema.safeParse(raw);
+  if (v3.success) {
+    return { ok: true, query: v3.data };
   }
   return { ok: false, errors: ["Parâmetros de busca inválidos."] };
 }
@@ -163,7 +180,7 @@ export const SearchHitSchema = SearchHitV2Schema;
 
 export const MaterialFamilySuggestionSchema = z.strictObject({
   id: z.string().min(1).max(128),
-  /** Published label used as /search?q=… target until Story 1.6 slugs exist. */
+  /** Durable published slug for /materials/:slug. */
   slug: z.string().min(1).max(128),
   label: z.string().min(1).max(64),
 });
@@ -171,6 +188,22 @@ export const MaterialFamilySuggestionSchema = z.strictObject({
 export type MaterialFamilySuggestion = z.infer<
   typeof MaterialFamilySuggestionSchema
 >;
+
+export const BrandSuggestionSchema = z.strictObject({
+  id: z.string().min(1).max(128),
+  slug: z.string().min(1).max(128),
+  label: z.string().min(1).max(512),
+});
+
+export type BrandSuggestion = z.infer<typeof BrandSuggestionSchema>;
+
+export const SpecificTypeFacetSchema = z.strictObject({
+  slug: z.string().min(1).max(128),
+  label: z.string().min(1).max(128),
+  count: z.number().int().safe().nonnegative().max(SEARCH_MAX_TOTAL_COUNT),
+});
+
+export type SpecificTypeFacet = z.infer<typeof SpecificTypeFacetSchema>;
 
 export const StoreSupportSummarySchema = z.strictObject({
   storeId: z.string().min(1).max(128),
@@ -211,17 +244,55 @@ export const SearchPageV2Schema = z.strictObject({
 });
 
 export type SearchPageV2 = z.infer<typeof SearchPageV2Schema>;
-export type SearchPage = SearchPageV2;
-export const SearchPageSchema = SearchPageV2Schema;
+
+export const SearchPageV3Schema = z.strictObject({
+  query: QueryTextSchema.nullable(),
+  hits: z.array(SearchHitV2Schema).max(SEARCH_PAGE_MAX_HITS),
+  totalCount: z.number().int().safe().nonnegative().max(SEARCH_MAX_TOTAL_COUNT),
+  materialFamilySuggestions: z
+    .array(MaterialFamilySuggestionSchema)
+    .max(SEARCH_PAGE_MAX_SUGGESTIONS),
+  brandSuggestions: z
+    .array(BrandSuggestionSchema)
+    .max(SEARCH_PAGE_MAX_SUGGESTIONS),
+  specificTypeFacet: z
+    .array(SpecificTypeFacetSchema)
+    .max(SEARCH_PAGE_MAX_SUGGESTIONS),
+  storeSupport: z
+    .array(StoreSupportSummarySchema)
+    .max(SEARCH_PAGE_MAX_STORE_SUPPORT),
+  nextCursor: CursorSchema.nullable(),
+  hasNextPage: z.boolean(),
+  limits: SearchPageLimitsV2Schema,
+}).superRefine((page, ctx) => {
+  if (page.hasNextPage !== (page.nextCursor !== null)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["hasNextPage"],
+      message: "hasNextPage must equal (nextCursor !== null)",
+    });
+  }
+});
+
+export type SearchPageV3 = z.infer<typeof SearchPageV3Schema>;
+export type SearchPage = SearchPageV3;
+export const SearchPageSchema = SearchPageV3Schema;
 
 export const RpcEnvelopeMetaV2Schema = z.strictObject({
+  contractVersion: z.literal(SEARCH_PAGE_CONTRACT_VERSION_V2),
+  projectionEpoch: z.number().int().safe().nonnegative(),
+  supportEpoch: z.number().int().safe().nonnegative(),
+  correlationId: CorrelationIdSchema,
+});
+
+export const RpcEnvelopeMetaV3Schema = z.strictObject({
   contractVersion: z.literal(SEARCH_PAGE_CONTRACT_VERSION),
   projectionEpoch: z.number().int().safe().nonnegative(),
   supportEpoch: z.number().int().safe().nonnegative(),
   correlationId: CorrelationIdSchema,
 });
 
-export type RpcEnvelopeMeta = z.infer<typeof RpcEnvelopeMetaV2Schema>;
+export type RpcEnvelopeMeta = z.infer<typeof RpcEnvelopeMetaV3Schema>;
 
 const RpcOutcomeOkV2Schema = RpcEnvelopeMetaV2Schema.extend({
   outcome: z.literal("ok"),
@@ -257,13 +328,60 @@ export const SearchPageRpcOutcomeV2Schema = z.discriminatedUnion("outcome", [
   RpcOutcomeUnavailableV2Schema,
 ]);
 
+const RpcOutcomeOkV3Schema = RpcEnvelopeMetaV3Schema.extend({
+  outcome: z.literal("ok"),
+  data: SearchPageV3Schema,
+});
+
+const RpcOutcomeDegradedV3Schema = RpcEnvelopeMetaV3Schema.extend({
+  outcome: z.literal("degraded"),
+  data: SearchPageV3Schema,
+  qualification: boundedUtf8(SEARCH_QUALIFICATION_MAX_UTF8_BYTES),
+});
+
+const RpcOutcomeInvalidV3Schema = RpcEnvelopeMetaV3Schema.extend({
+  outcome: z.literal("invalid"),
+  errors: z.array(boundedUtf8(SEARCH_ERROR_MAX_UTF8_BYTES)).min(1).max(SEARCH_MAX_ERRORS),
+});
+
+const RpcOutcomeOverloadedV3Schema = RpcEnvelopeMetaV3Schema.extend({
+  outcome: z.literal("overloaded"),
+  retryAfterSeconds: z.number().int().safe().positive().max(3600),
+});
+
+const RpcOutcomeUnavailableV3Schema = RpcEnvelopeMetaV3Schema.extend({
+  outcome: z.literal("unavailable"),
+  retryAfterSeconds: z.number().int().safe().positive().max(3600),
+});
+
+export const SearchPageRpcOutcomeV3Schema = z.discriminatedUnion("outcome", [
+  RpcOutcomeOkV3Schema,
+  RpcOutcomeDegradedV3Schema,
+  RpcOutcomeInvalidV3Schema,
+  RpcOutcomeOverloadedV3Schema,
+  RpcOutcomeUnavailableV3Schema,
+]);
+
 export type SearchPageRpcOutcomeV2 = z.infer<typeof SearchPageRpcOutcomeV2Schema>;
-export type SearchPageRpcOutcome = SearchPageRpcOutcomeV2;
-export const SearchPageRpcOutcomeSchema = SearchPageRpcOutcomeV2Schema;
+export type SearchPageRpcOutcomeV3 = z.infer<typeof SearchPageRpcOutcomeV3Schema>;
+export type SearchPageRpcOutcome = SearchPageRpcOutcomeV3;
+export const SearchPageRpcOutcomeSchema = SearchPageRpcOutcomeV3Schema;
 
-// ─── Strict v1 (N-1) — real prior wire, not an alias of v2 ───────────────────
+function hydrateV2Page(page: SearchPageV2): SearchPageV3 {
+  return { ...page, brandSuggestions: [], specificTypeFacet: [] };
+}
 
-/** Decode the initial v2 wire. Unknown versions and unknown keys fail closed. */
+function hydrateV2Outcome(outcome: SearchPageRpcOutcomeV2): SearchPageRpcOutcomeV3 {
+  if (outcome.outcome === "ok") {
+    return { ...outcome, contractVersion: SEARCH_PAGE_CONTRACT_VERSION, data: hydrateV2Page(outcome.data) };
+  }
+  if (outcome.outcome === "degraded") {
+    return { ...outcome, contractVersion: SEARCH_PAGE_CONTRACT_VERSION, data: hydrateV2Page(outcome.data) };
+  }
+  return { ...outcome, contractVersion: SEARCH_PAGE_CONTRACT_VERSION };
+}
+
+/** Decode v3 (current) or hydrate released v2 predecessor. Unknown versions fail closed. */
 export function decodeSearchPageRpcOutcome(
   raw: unknown,
 ):
@@ -278,17 +396,20 @@ export function decodeSearchPageRpcOutcome(
     return { ok: false, reason: "invalid_shape" };
   }
 
-  if (
-    (raw as { contractVersion: number }).contractVersion !==
-    SEARCH_PAGE_CONTRACT_VERSION
-  ) {
-    return { ok: false, reason: "unknown_version" };
+  const version = (raw as { contractVersion: number }).contractVersion;
+  if (version === SEARCH_PAGE_CONTRACT_VERSION) {
+    const parsed = SearchPageRpcOutcomeV3Schema.safeParse(raw);
+    return parsed.success
+      ? { ok: true, value: parsed.data }
+      : { ok: false, reason: "invalid_shape" };
   }
-
-  const parsed = SearchPageRpcOutcomeV2Schema.safeParse(raw);
-  return parsed.success
-    ? { ok: true, value: parsed.data }
-    : { ok: false, reason: "invalid_shape" };
+  if (version === SEARCH_PAGE_CONTRACT_VERSION_V2) {
+    const parsed = SearchPageRpcOutcomeV2Schema.safeParse(raw);
+    return parsed.success
+      ? { ok: true, value: hydrateV2Outcome(parsed.data) }
+      : { ok: false, reason: "invalid_shape" };
+  }
+  return { ok: false, reason: "unknown_version" };
 }
 
 /** Invalid for getSearchPage — contract tests must reject these. */

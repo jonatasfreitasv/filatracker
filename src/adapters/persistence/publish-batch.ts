@@ -15,6 +15,12 @@ import type {
 } from "../../contracts/store-run-evidence";
 import { buildSearchDocument } from "../../domain/search-query";
 import {
+  lookupBrand,
+  lookupFormulationSpecificType,
+  lookupMaterialFamily,
+  taxonomySearchFields,
+} from "../../domain/taxonomy";
+import {
   sqlBumpSearchWriteGeneration,
   sqlDeleteStoreFtsDocs,
   sqlInsertStoreFtsDocs,
@@ -67,6 +73,27 @@ export type PublishBatchResult =
 
 function boolInt(v: boolean): number {
   return v ? 1 : 0;
+}
+
+function taxonomyIdsFor(offer: StagedOffer): {
+  brandId: string | null;
+  materialFamilyId: string | null;
+  formulationSpecificTypeId: string | null;
+} {
+  const extra = offer as StagedOffer & {
+    brandId?: string | null;
+    materialFamilyId?: string | null;
+    formulationSpecificTypeId?: string | null;
+  };
+  return {
+    brandId: extra.brandId ?? lookupBrand(offer.brand)?.id ?? null,
+    materialFamilyId:
+      extra.materialFamilyId ?? lookupMaterialFamily(offer.materialFamily)?.id ?? null,
+    formulationSpecificTypeId:
+      extra.formulationSpecificTypeId ??
+      lookupFormulationSpecificType(offer.materialFamily)?.id ??
+      null,
+  };
 }
 
 /**
@@ -234,8 +261,9 @@ export async function executePublicationBatch(
     )
     .bind(f.runId, f.claimId, f.runId);
 
-  const insertStaged = canonicalStaged.map((s) =>
-    db
+  const insertStaged = canonicalStaged.map((s) => {
+    const taxonomy = taxonomyIdsFor(s);
+    return db
       .prepare(
         `INSERT INTO staged_offers (
           run_id, offer_id, store_id, source_key, continuity_fingerprint,
@@ -243,9 +271,10 @@ export async function executePublicationBatch(
           brand, specific_type, material_family, color, diameter_mm, mass_grams,
           listing_price_centavos, original_price_centavos, is_promotion, availability,
           observed_at, map_version, parser_version, normalize_policy_version,
-          standalone_only, append_price_point, listing_title, search_text
+          standalone_only, append_price_point, listing_title, search_text,
+          brand_id, material_family_id, formulation_specific_type_id
         )
-        SELECT c.run_id, ?, c.store_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT c.run_id, ?, c.store_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         FROM publication_claims c
         WHERE c.claim_id = ? AND c.run_id = ? AND c.store_id = ? AND c.status = 'open'`,
       )
@@ -259,10 +288,16 @@ export async function executePublicationBatch(
         s.normalizePolicyVersion, boolInt(s.standaloneOnly),
         boolInt(s.listingPriceCentavos !== null && s.listingPriceCentavos > 0),
         s.listingTitle,
-        buildSearchDocument([s.brand, s.materialFamily, s.listingTitle]),
+        buildSearchDocument([
+          s.listingTitle,
+          ...taxonomySearchFields(taxonomy),
+        ]),
+        taxonomy.brandId,
+        taxonomy.materialFamilyId,
+        taxonomy.formulationSpecificTypeId,
         f.claimId, f.runId, f.storeId,
-      ),
-  );
+      );
+  });
 
   // Upsert offers conditioned on open claim for this run.
   const upsertOffers = db
@@ -273,7 +308,7 @@ export async function executePublicationBatch(
         color, diameter_mm, mass_grams, listing_price_centavos, original_price_centavos,
         is_promotion, availability, observed_at, published_at, map_version, parser_version,
         normalize_policy_version, standalone_only, visible, tombstoned, stale_after,
-        listing_title, search_text
+        listing_title, search_text, brand_id, material_family_id, formulation_specific_type_id
       )
       SELECT
         s.offer_id, s.store_id, s.source_key, s.canonical_pdp_url, s.merchant_variant_id,
@@ -282,7 +317,8 @@ export async function executePublicationBatch(
         s.is_promotion, s.availability, s.observed_at, ?, s.map_version, s.parser_version,
         s.normalize_policy_version, s.standalone_only, 1, 0,
         strftime('%Y-%m-%dT%H:%M:%fZ', s.observed_at, '+48 hours'),
-        s.listing_title, s.search_text
+        s.listing_title, s.search_text, s.brand_id, s.material_family_id,
+        s.formulation_specific_type_id
       FROM staged_offers s
       INNER JOIN publication_claims c
         ON c.claim_id = ? AND c.run_id = s.run_id AND c.status = 'open'
@@ -309,6 +345,9 @@ export async function executePublicationBatch(
         standalone_only = excluded.standalone_only,
         listing_title = excluded.listing_title,
         search_text = excluded.search_text,
+        brand_id = excluded.brand_id,
+        material_family_id = excluded.material_family_id,
+        formulation_specific_type_id = excluded.formulation_specific_type_id,
         visible = 1,
         tombstoned = 0
       WHERE excluded.observed_at >= offers.observed_at

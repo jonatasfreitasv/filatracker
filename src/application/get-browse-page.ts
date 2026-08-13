@@ -1,13 +1,13 @@
 import {
+  BROWSE_PAGE_CONTRACT_VERSION,
   CorrelationIdSchema,
   DEFAULT_RETRY_AFTER_SECONDS,
-  SEARCH_PAGE_CONTRACT_VERSION,
-  type SearchPageRpcOutcome,
+  type BrowsePageRpcOutcome,
 } from "../contracts";
 import type {
-  GetSearchPageInput,
-  SearchCatalogPort,
-  SearchPageSnapshot,
+  BrowseCatalogPort,
+  BrowsePageSnapshot,
+  GetBrowsePageInput,
 } from "./ports";
 
 function newCorrelationId(): string {
@@ -15,13 +15,13 @@ function newCorrelationId(): string {
 }
 
 function logAllowlisted(code: string, correlationId: string): void {
-  console.error("get_search_page", { code, correlationId });
+  console.error("get_browse_page", { code, correlationId });
 }
 
-export async function getSearchPage(
-  catalog: SearchCatalogPort,
-  input: GetSearchPageInput,
-): Promise<SearchPageRpcOutcome> {
+export async function getBrowsePage(
+  catalog: BrowseCatalogPort,
+  input: GetBrowsePageInput,
+): Promise<BrowsePageRpcOutcome> {
   const suppliedCorrelationId = CorrelationIdSchema.safeParse(input.correlationId);
   const correlationId = suppliedCorrelationId.success
     ? suppliedCorrelationId.data
@@ -31,18 +31,19 @@ export async function getSearchPage(
   if (input.hasInvalidParameters) {
     return {
       outcome: "invalid",
-      contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+      contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
       projectionEpoch: 0,
       supportEpoch: 0,
       correlationId,
-      errors: ["Parâmetros de busca inválidos."],
+      errors: ["Parâmetros de navegação inválidos."],
     };
   }
 
-  let snapshot: SearchPageSnapshot;
+  let snapshot: BrowsePageSnapshot;
   try {
-    snapshot = await catalog.getSearchPageSnapshot({
-      q: input.q,
+    snapshot = await catalog.getBrowsePageSnapshot({
+      kind: input.kind,
+      slug: input.slug,
       cursor: input.cursor,
       limit: input.limit,
       type: input.type,
@@ -60,7 +61,7 @@ export async function getSearchPage(
     );
     return {
       outcome: overloaded ? "overloaded" : "unavailable",
-      contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+      contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
       projectionEpoch: 0,
       supportEpoch: 0,
       correlationId,
@@ -69,7 +70,7 @@ export async function getSearchPage(
   }
 
   const meta = {
-    contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+    contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
     projectionEpoch: snapshot.projectionEpoch,
     supportEpoch: snapshot.supportEpoch,
     correlationId,
@@ -77,17 +78,24 @@ export async function getSearchPage(
 
   switch (snapshot.outcome) {
     case "invalid":
-      return {
-        ...meta,
-        outcome: "invalid",
-        errors: snapshot.errors,
-      };
+      return { ...meta, outcome: "invalid", errors: snapshot.errors };
+    case "notFound":
+      return { ...meta, outcome: "notFound" };
+    case "gone":
+      return { ...meta, outcome: "gone" };
     case "overloaded":
     case "unavailable":
       return {
         ...meta,
         outcome: snapshot.outcome,
         retryAfterSeconds: DEFAULT_RETRY_AFTER_SECONDS,
+      };
+    case "redirect":
+      return {
+        ...meta,
+        outcome: "redirect",
+        canonicalSlug: snapshot.canonicalSlug,
+        kind: snapshot.kind,
       };
     case "degraded":
       return {
@@ -96,13 +104,9 @@ export async function getSearchPage(
         data: snapshot.page,
         qualification:
           snapshot.qualification ??
-          "Busca em modo degradado — alguns dados podem estar indisponíveis.",
+          "Navegação em modo degradado — alguns dados podem estar indisponíveis.",
       };
     case "ok":
-      return {
-        ...meta,
-        outcome: "ok",
-        data: snapshot.page,
-      };
+      return { ...meta, outcome: "ok", data: snapshot.page };
   }
 }

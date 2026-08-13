@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type {
   MaterialFamilySuggestion,
   SearchHit,
+  SpecificTypeFacet,
 } from "../../src/contracts";
 
 function formatBrl(centavos: number): string {
@@ -143,11 +144,65 @@ export function SuggestionChips({ suggestions }: SuggestionChipsProps) {
     <ul className="ft-suggestions" aria-label="Famílias de material publicadas">
       {suggestions.map((s) => (
         <li key={s.id}>
+          <a className="ft-suggestion-chip" href={`/materials/${s.slug}`}>
+            {s.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export type ContextChip = {
+  key: string;
+  facet: string;
+  value: string;
+  removeHref: string;
+};
+
+type ContextChipsProps = {
+  chips: ContextChip[];
+};
+
+export function ContextChips({ chips }: ContextChipsProps) {
+  if (chips.length === 0) return null;
+  return (
+    <ul className="ft-context-chips" aria-label="Filtros ativos">
+      {chips.map((chip) => (
+        <li key={chip.key}>
+          <a
+            className="ft-context-chip"
+            href={chip.removeHref}
+            aria-label={`Remover ${chip.facet} ${chip.value}`}
+          >
+            <span className="ft-context-chip-facet">{chip.facet}</span>
+            <span>{chip.value}</span>
+            <span aria-hidden="true">×</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+type TypeFacetChipsProps = {
+  facets: SpecificTypeFacet[];
+  activeSlug?: string | null;
+  hrefFor: (slug: string | null) => string;
+};
+
+export function TypeFacetChips({ facets, activeSlug, hrefFor }: TypeFacetChipsProps) {
+  if (facets.length === 0) return null;
+  return (
+    <ul className="ft-suggestions" aria-label="Tipos específicos">
+      {facets.map((facet) => (
+        <li key={facet.slug}>
           <a
             className="ft-suggestion-chip"
-            href={`/search?q=${encodeURIComponent(s.label)}`}
+            href={hrefFor(facet.slug === activeSlug ? null : facet.slug)}
+            aria-current={facet.slug === activeSlug ? "true" : undefined}
           >
-            {s.label}
+            {facet.label} ({facet.count})
           </a>
         </li>
       ))}

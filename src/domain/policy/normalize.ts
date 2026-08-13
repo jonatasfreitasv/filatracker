@@ -1,43 +1,23 @@
 /**
  * Versioned deterministic normalization dictionaries/policies (AD-7 / AD-15).
  * Unknown or ambiguous values → explicit null. No fuzzy substring invention.
- * Story 1.6 still owns durable browse taxonomy, aliases, and slugs.
+ * Durable browse taxonomy, aliases, and slugs live in `src/domain/taxonomy`.
  */
 
-export const NORMALIZE_POLICY_VERSION = 1 as const;
+export const NORMALIZE_POLICY_VERSION = 2 as const;
 
 import type {
   MaterialFamily,
   SpecificType,
 } from "../../contracts/offer";
+import {
+  FAMILY_BY_ID,
+  lookupBrand,
+  lookupFormulationSpecificType,
+  lookupMaterialFamily,
+  type FormulationSpecificTypeRecord,
+} from "../taxonomy";
 import { normalizeListingTitle } from "./listing-title";
-
-const BRAND_ALIASES: ReadonlyMap<string, string> = new Map([
-  ["closin", "Closin"],
-  ["3dfila", "3D Fila"],
-  ["3d fila", "3D Fila"],
-  ["voolt", "Voolt"],
-  ["voolt3d", "Voolt3D"],
-  ["printalot", "PrintaLot"],
-  ["3dcolors", "3D Colors"],
-  ["3d colors", "3D Colors"],
-]);
-
-const MATERIAL_FAMILY_ALIASES: ReadonlyMap<string, MaterialFamily> = new Map([
-  ["pla", "PLA"],
-  ["pla+", "PLA"],
-  ["pla plus", "PLA"],
-  ["petg", "PETG"],
-  ["abs", "ABS"],
-  ["asa", "ASA"],
-  ["tpu", "TPU"],
-  ["pc", "PC"],
-  ["nylon", "Nylon"],
-  ["pa6", "Nylon"],
-  ["pa12", "Nylon"],
-  ["pva", "PVA"],
-  ["hips", "HIPS"],
-]);
 
 const COLOR_ALIASES: ReadonlyMap<string, string> = new Map([
   ["branco", "Branco"],
@@ -83,17 +63,19 @@ function nfkcLower(text: string | null | undefined): string {
 }
 
 export function normalizeBrand(evidence: string | null): string | null {
-  const key = nfkcLower(evidence);
-  if (!key) return null;
-  return BRAND_ALIASES.get(key) ?? null;
+  return lookupBrand(evidence)?.label ?? null;
 }
 
 export function normalizeMaterialFamily(
   evidence: string | null,
 ): MaterialFamily | null {
-  const key = nfkcLower(evidence);
-  if (!key) return null;
-  return MATERIAL_FAMILY_ALIASES.get(key) ?? null;
+  return lookupMaterialFamily(evidence)?.label ?? null;
+}
+
+export function normalizeFormulationSpecificType(
+  evidence: string | null,
+): FormulationSpecificTypeRecord | null {
+  return lookupFormulationSpecificType(evidence);
 }
 
 export function normalizeColor(evidence: string | null): string | null {
@@ -109,7 +91,8 @@ export function normalizeDiameterMm(evidence: string | null): number | null {
 }
 
 /**
- * Specific Type from evidence only — kits stay filament_kit; never invent.
+ * Product-kind Specific Type from evidence only — kits stay filament_kit.
+ * Never used as UX formulation Specific Type (PETG HF / PLA+).
  */
 export function normalizeSpecificType(input: {
   titleEvidence: string | null;
@@ -133,8 +116,12 @@ export function normalizeSpecificType(input: {
 export type NormalizedOfferFacts = {
   normalizePolicyVersion: typeof NORMALIZE_POLICY_VERSION;
   brand: string | null;
+  brandId: string | null;
   specificType: SpecificType | null;
   materialFamily: MaterialFamily | null;
+  materialFamilyId: string | null;
+  formulationSpecificType: FormulationSpecificTypeRecord | null;
+  formulationSpecificTypeId: string | null;
   color: string | null;
   diameterMm: number | null;
   massGrams: number | null;
@@ -161,8 +148,11 @@ export function normalizeObservation(input: {
   availability: "available" | "unavailable" | "unknown";
   isPromotion: boolean;
 }): NormalizedOfferFacts {
-  const brand = normalizeBrand(input.brandEvidence);
-  const materialFamily = normalizeMaterialFamily(input.materialEvidence);
+  const brandRecord = lookupBrand(input.brandEvidence);
+  const formulation = lookupFormulationSpecificType(input.materialEvidence);
+  const familyRecord =
+    (formulation ? FAMILY_BY_ID.get(formulation.familyId) ?? null : null) ??
+    lookupMaterialFamily(input.materialEvidence);
   const color = normalizeColor(input.colorEvidence);
   const diameterMm = normalizeDiameterMm(input.diameterEvidence);
   const specificType = normalizeSpecificType({
@@ -173,16 +163,20 @@ export function normalizeObservation(input: {
   const listingTitle = normalizeListingTitle(input.titleEvidence);
 
   const incompleteCanonical =
-    brand === null ||
-    materialFamily === null ||
+    brandRecord === null ||
+    familyRecord === null ||
     specificType === null ||
     input.massGrams === null;
 
   return {
     normalizePolicyVersion: NORMALIZE_POLICY_VERSION,
-    brand,
+    brand: brandRecord?.label ?? null,
+    brandId: brandRecord?.id ?? null,
     specificType,
-    materialFamily,
+    materialFamily: familyRecord?.label ?? null,
+    materialFamilyId: familyRecord?.id ?? null,
+    formulationSpecificType: formulation,
+    formulationSpecificTypeId: formulation?.id ?? null,
     color,
     diameterMm,
     massGrams: input.massGrams,

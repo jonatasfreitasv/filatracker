@@ -34,6 +34,7 @@ export type SearchLoaderSuccess = {
   outcome: SearchPageRpcOutcome;
   query: string | null;
   cursor: string | null;
+  type: string | null;
 };
 
 export type SearchLoaderResult = SearchLoaderSuccess | SearchLoaderError;
@@ -41,17 +42,29 @@ export type SearchLoaderResult = SearchLoaderSuccess | SearchLoaderError;
 function parseSearchParams(request: Request): {
   q?: string;
   cursor?: string;
+  type?: string;
   hasInvalidParameters: boolean;
 } {
   const url = new URL(request.url);
   const keys = [...url.searchParams.keys()];
-  const allowed = new Set(["q", "cursor"]);
+  const allowed = new Set(["q", "cursor", "type"]);
   const unknown = keys.filter((k) => !allowed.has(k));
   const qAll = url.searchParams.getAll("q");
   const cursorAll = url.searchParams.getAll("cursor");
+  const typeAll = url.searchParams.getAll("type");
 
-  if (unknown.length > 0 || qAll.length > 1 || cursorAll.length > 1) {
-    return { hasInvalidParameters: true, q: qAll[0], cursor: cursorAll[0] };
+  if (
+    unknown.length > 0 ||
+    qAll.length > 1 ||
+    cursorAll.length > 1 ||
+    typeAll.length > 1
+  ) {
+    return {
+      hasInvalidParameters: true,
+      q: qAll[0],
+      cursor: cursorAll[0],
+      type: typeAll[0],
+    };
   }
 
   const cursor = cursorAll[0];
@@ -59,19 +72,21 @@ function parseSearchParams(request: Request): {
     cursor !== undefined &&
     new TextEncoder().encode(cursor).byteLength > SEARCH_CURSOR_MAX_UTF8_BYTES
   ) {
-    return { hasInvalidParameters: true, q: qAll[0], cursor };
+    return { hasInvalidParameters: true, q: qAll[0], cursor, type: typeAll[0] };
   }
 
   return {
     hasInvalidParameters: false,
     q: qAll.length === 0 ? undefined : qAll[0],
     cursor,
+    type: typeAll[0],
   };
 }
 
 function throwInvalid(
   query: string | undefined,
   cursor: string | undefined,
+  type: string | undefined,
 ): never {
   const outcome: SearchPageRpcOutcome = {
     outcome: "invalid",
@@ -87,6 +102,7 @@ function throwInvalid(
       outcome,
       query,
       cursor,
+      type,
     }),
     noStoreInit({ status: 400 }),
   );
@@ -99,13 +115,13 @@ export async function loadSearchPage(
   const parsed = parseSearchParams(request);
 
   if (parsed.hasInvalidParameters) {
-    throwInvalid(parsed.q, parsed.cursor);
+    throwInvalid(parsed.q, parsed.cursor, parsed.type);
   }
 
   const rawQ = parsed.q;
   const trimmed = rawQ?.trim() ?? "";
 
-  if (options.canonicalizeEmptyToHome && trimmed === "" && !parsed.cursor) {
+  if (options.canonicalizeEmptyToHome && trimmed === "" && !parsed.cursor && parsed.type === undefined) {
     throw redirect("/", 302);
   }
 
@@ -114,17 +130,18 @@ export async function loadSearchPage(
   if (rawQ !== undefined) {
     const normalized = normalizeSearchQuery(rawQ);
     if (!normalized.ok) {
-      throwInvalid(rawQ, parsed.cursor);
+      throwInvalid(rawQ, parsed.cursor, parsed.type);
     }
   }
 
   const queryBody = {
     ...(rawQ !== undefined ? { q: rawQ } : {}),
     ...(parsed.cursor !== undefined ? { cursor: parsed.cursor } : {}),
+    ...(parsed.type !== undefined ? { type: parsed.type } : {}),
   };
   const validated = parseSearchPageQuery(queryBody);
   if (!validated.ok) {
-    throwInvalid(rawQ, parsed.cursor);
+    throwInvalid(rawQ, parsed.cursor, parsed.type);
   }
 
   let outcome: SearchPageRpcOutcome;
@@ -146,6 +163,7 @@ export async function loadSearchPage(
         outcome,
         query: rawQ,
         cursor: parsed.cursor,
+        type: parsed.type,
       }),
       noStoreInit({ status: 400 }),
     );
@@ -160,6 +178,7 @@ export async function loadSearchPage(
         outcome,
         query: rawQ,
         cursor: parsed.cursor,
+        type: parsed.type,
         retryAfterSeconds: outcome.retryAfterSeconds,
       }),
       { status: 503, headers },
@@ -169,16 +188,40 @@ export async function loadSearchPage(
   if (outcome.outcome === "ok" || outcome.outcome === "degraded") {
     const query = outcome.data.query;
     if (query === null) {
-      return { kind: "empty-home", outcome, query, cursor: parsed.cursor ?? null };
+      return {
+        kind: "empty-home",
+        outcome,
+        query,
+        cursor: parsed.cursor ?? null,
+        type: parsed.type ?? null,
+      };
     }
     // degraded + zero hits must NEVER be reclassified as honest no-match.
     if (outcome.outcome === "degraded") {
-      return { kind: "degraded", outcome, query, cursor: parsed.cursor ?? null };
+      return {
+        kind: "degraded",
+        outcome,
+        query,
+        cursor: parsed.cursor ?? null,
+        type: parsed.type ?? null,
+      };
     }
     if (outcome.data.totalCount === 0) {
-      return { kind: "no-match", outcome, query, cursor: parsed.cursor ?? null };
+      return {
+        kind: "no-match",
+        outcome,
+        query,
+        cursor: parsed.cursor ?? null,
+        type: parsed.type ?? null,
+      };
     }
-    return { kind: "ok", outcome, query, cursor: parsed.cursor ?? null };
+    return {
+      kind: "ok",
+      outcome,
+      query,
+      cursor: parsed.cursor ?? null,
+      type: parsed.type ?? null,
+    };
   }
 
   const headers = new Headers(NO_STORE_HEADERS);
@@ -189,6 +232,7 @@ export async function loadSearchPage(
       outcome: nativeFailureToUnavailable(crypto.randomUUID()),
       query: rawQ,
       cursor: parsed.cursor,
+      type: parsed.type,
       retryAfterSeconds: 5,
     }),
     { status: 503, headers },

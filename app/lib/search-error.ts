@@ -5,6 +5,7 @@ export type SearchLoaderError = {
   outcome: SearchPageRpcOutcome;
   query: string | null;
   cursor: string | null;
+  type: string | null;
   retryAfterSeconds?: number;
 };
 
@@ -13,6 +14,7 @@ export function createSearchLoaderError(input: {
   outcome: SearchPageRpcOutcome;
   query: string | undefined;
   cursor: string | undefined;
+  type?: string | undefined;
   retryAfterSeconds?: number;
 }): SearchLoaderError {
   return {
@@ -20,6 +22,7 @@ export function createSearchLoaderError(input: {
     outcome: input.outcome,
     query: input.query ?? null,
     cursor: input.cursor ?? null,
+    type: input.type ?? null,
     ...(input.retryAfterSeconds === undefined
       ? {}
       : { retryAfterSeconds: input.retryAfterSeconds }),

@@ -388,8 +388,11 @@ describe("search pipeline (publish → FTS → aggregate)", () => {
     }
 
     const cursor = encodeSearchCursor({
-      v: 1,
+      v: 2,
       queryDigest: "0123456789abcdef",
+      intentKind: "text",
+      typeSlug: null,
+      taxonomyVersion: 1,
       parserVersion: 1,
       indexVersion: 1,
       projectionEpoch: 1,

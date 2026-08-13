@@ -5,6 +5,14 @@
 
 import type { RawOfferObservationV2 } from "../../contracts/raw-offer-observation";
 import type { StagedOffer } from "../../contracts/offer";
+
+/** Application publication row — taxonomy IDs stay off the strict Offer v1 wire. */
+export type StagedOfferPublication = StagedOffer & {
+  brandId: string | null;
+  materialFamilyId: string | null;
+  formulationSpecificTypeId: string | null;
+  formulationSpecificTypeLabel: string | null;
+};
 import { assessPromotion } from "../../domain/policy/promotion";
 import {
   normalizeObservation,
@@ -26,7 +34,7 @@ export type StageReject = {
 };
 
 export type NormalizeValidateResult = {
-  staged: StagedOffer[];
+  staged: StagedOfferPublication[];
   rejected: StageReject[];
   quarantined: StageReject[];
   identityBySourceKey: Map<string, OfferIdentityRecord>;
@@ -44,7 +52,7 @@ export function normalizeAndValidateObservations(input: {
   tombstones?: ReadonlySet<string>;
   lineage?: ReadonlyMap<string, OfferIdentityLineageRecord>;
 }): NormalizeValidateResult {
-  const staged: StagedOffer[] = [];
+  const staged: StagedOfferPublication[] = [];
   const rejected: StageReject[] = [];
   const quarantined: StageReject[] = [];
   const identityBySourceKey = new Map<string, OfferIdentityRecord>(
@@ -163,6 +171,11 @@ export function normalizeAndValidateObservations(input: {
       normalizePolicyVersion: validated.facts.normalizePolicyVersion,
       standaloneOnly: validated.facts.standaloneOnly,
       visible: false,
+      brandId: validated.facts.brandId,
+      materialFamilyId: validated.facts.materialFamilyId,
+      formulationSpecificTypeId: validated.facts.formulationSpecificTypeId,
+      formulationSpecificTypeLabel:
+        validated.facts.formulationSpecificType?.label ?? null,
     });
   }
 

@@ -1,7 +1,11 @@
 import {
+  BROWSE_PAGE_CONTRACT_VERSION,
   DEFAULT_RETRY_AFTER_SECONDS,
   SEARCH_PAGE_CONTRACT_VERSION,
+  decodeBrowsePageRpcOutcome,
   decodeSearchPageRpcOutcome,
+  type BrowsePageQuery,
+  type BrowsePageRpcOutcome,
   type SearchPageQuery,
   type SearchPageRpcOutcome,
 } from "../../contracts";
@@ -15,6 +19,11 @@ export interface IngestServiceBinding {
     query: SearchPageQuery,
     correlationId: string,
     /** Remaining client deadline budget in ms; ingest caps to its configured max. */
+    deadlineMs?: number,
+  ): Promise<unknown>;
+  getBrowsePage(
+    query: BrowsePageQuery,
+    correlationId: string,
     deadlineMs?: number,
   ): Promise<unknown>;
 }
@@ -123,4 +132,102 @@ export function nativeFailureToUnavailable(
     correlationId,
     retryAfterSeconds,
   };
+}
+
+export function nativeBrowseFailureToUnavailable(
+  correlationId: string,
+  retryAfterSeconds = DEFAULT_RETRY_AFTER_SECONDS,
+): BrowsePageRpcOutcome {
+  return {
+    outcome: "unavailable",
+    contractVersion: BROWSE_PAGE_CONTRACT_VERSION,
+    projectionEpoch: 0,
+    supportEpoch: 0,
+    correlationId,
+    retryAfterSeconds,
+  };
+}
+
+function isBrowseRetryable(outcome: BrowsePageRpcOutcome): boolean {
+  return outcome.outcome === "unavailable" || outcome.outcome === "overloaded";
+}
+
+/**
+ * Web-side typed browse client. Never touches D1.
+ * Deploy ingest (callee method) before web callers.
+ */
+export async function callGetBrowsePage(
+  ingest: IngestServiceBinding,
+  query: BrowsePageQuery,
+  options: CallSearchPageOptions = {},
+): Promise<BrowsePageRpcOutcome> {
+  const maxRetries = options.maxRetries ?? 1;
+  const deadlineMs = Math.min(Math.max(options.deadlineMs ?? 2000, 1), 2000);
+  const started = Date.now();
+  const correlationId = crypto.randomUUID();
+  const RETRY_BACKOFF_MS = 250;
+
+  async function attemptOnce(): Promise<BrowsePageRpcOutcome> {
+    const remainingMs = deadlineMs - (Date.now() - started);
+    if (remainingMs <= 0) return nativeBrowseFailureToUnavailable(correlationId);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const raw = await Promise.race([
+        ingest.getBrowsePage(query, correlationId, Math.ceil(remainingMs)),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            const error = new Error("deadline");
+            error.name = "DeadlineExceededError";
+            reject(error);
+          }, remainingMs);
+        }),
+      ]);
+      const decoded = decodeBrowsePageRpcOutcome(raw);
+      if (!decoded.ok) {
+        console.error("Service Binding getBrowsePage decode failed", {
+          code: decoded.reason,
+          correlationId,
+        });
+        return nativeBrowseFailureToUnavailable(correlationId);
+      }
+      if (decoded.value.correlationId !== correlationId) {
+        console.error("Service Binding getBrowsePage decode failed", {
+          code: "correlation_mismatch",
+          correlationId,
+        });
+        return nativeBrowseFailureToUnavailable(correlationId);
+      }
+      const serialized = new TextEncoder().encode(JSON.stringify(decoded.value));
+      if (serialized.byteLength > 256 * 1024) {
+        console.error("Service Binding getBrowsePage decode failed", {
+          code: "payload_over_cap",
+          correlationId,
+        });
+        return nativeBrowseFailureToUnavailable(correlationId);
+      }
+      return decoded.value;
+    } catch {
+      console.error("Service Binding getBrowsePage threw", {
+        code: "rpc_native_failure",
+        correlationId,
+      });
+      return nativeBrowseFailureToUnavailable(correlationId);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  let attempt = 0;
+  let result = await attemptOnce();
+
+  while (attempt < maxRetries && isBrowseRetryable(result)) {
+    const elapsed = Date.now() - started;
+    if (elapsed + RETRY_BACKOFF_MS >= deadlineMs) break;
+    attempt += 1;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS));
+    if (Date.now() - started >= deadlineMs) break;
+    result = await attemptOnce();
+  }
+
+  return result;
 }

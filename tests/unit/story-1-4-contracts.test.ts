@@ -5,10 +5,12 @@ import { createSearchLoaderError } from "../../app/lib/search-error";
 import {
   MONEY_CENTAVOS_MAX,
   SEARCH_PAGE_CONTRACT_VERSION,
+  SEARCH_PAGE_CONTRACT_VERSION_V2,
   SEARCH_QUALIFICATION_MAX_UTF8_BYTES,
   SEARCH_RPC_ENVELOPE_HEADROOM_BYTES,
   SearchHitV2Schema,
   SearchPageQueryV2Schema,
+  SearchPageRpcOutcomeSchema,
   SearchPageRpcOutcomeV2Schema,
   decodeSearchPageRpcOutcome,
   parseSearchPageQuery,
@@ -47,17 +49,21 @@ function emptyPageV2() {
   };
 }
 
-describe("SearchPage v2 initial contract", () => {
-  it("accepts strict v2 ok outcome", () => {
+describe("SearchPage v2 predecessor + v3 current", () => {
+  it("accepts strict current ok outcome", () => {
     const sample = {
       outcome: "ok" as const,
       contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
       projectionEpoch: 1,
       supportEpoch: 1,
       correlationId,
-      data: emptyPageV2(),
+      data: {
+        ...emptyPageV2(),
+        brandSuggestions: [],
+        specificTypeFacet: [],
+      },
     };
-    expect(SearchPageRpcOutcomeV2Schema.parse(sample).outcome).toBe("ok");
+    expect(SearchPageRpcOutcomeSchema.parse(sample).outcome).toBe("ok");
   });
 
   it("rejects unknown keys on v2 query", () => {
@@ -70,7 +76,7 @@ describe("SearchPage v2 initial contract", () => {
     expect(SearchPageQueryV2Schema.safeParse({ q: " ".repeat(121) }).success).toBe(false);
     expect(SearchPageRpcOutcomeV2Schema.safeParse({
       outcome: "degraded",
-      contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+      contractVersion: SEARCH_PAGE_CONTRACT_VERSION_V2,
       projectionEpoch: 1,
       supportEpoch: 1,
       correlationId,
@@ -79,7 +85,7 @@ describe("SearchPage v2 initial contract", () => {
     }).success).toBe(false);
     expect(SearchPageRpcOutcomeV2Schema.safeParse({
       outcome: "invalid",
-      contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
+      contractVersion: SEARCH_PAGE_CONTRACT_VERSION_V2,
       projectionEpoch: 1,
       supportEpoch: 1,
       correlationId,
@@ -102,10 +108,28 @@ describe("SearchPage v2 initial contract", () => {
     ).toBeLessThanOrEqual(SEARCH_RPC_ENVELOPE_HEADROOM_BYTES);
   });
 
-  it("parseSearchPageQuery accepts strict v2", () => {
+  it("parseSearchPageQuery accepts strict v2 and additive type", () => {
     expect(parseSearchPageQuery({ q: "pla" }).ok).toBe(true);
     expect(parseSearchPageQuery({ q: "pla", limit: 10 }).ok).toBe(true);
+    expect(parseSearchPageQuery({ q: "PETG", type: "petg-hf" }).ok).toBe(true);
     expect(parseSearchPageQuery({ q: "pla", bogus: true }).ok).toBe(false);
+    expect(parseSearchPageQuery({ type: "PETG HF" }).ok).toBe(false);
+  });
+
+  it("hydrates released v2 pages into v3 fields", () => {
+    const decoded = decodeSearchPageRpcOutcome({
+      outcome: "ok",
+      contractVersion: SEARCH_PAGE_CONTRACT_VERSION_V2,
+      projectionEpoch: 1,
+      supportEpoch: 1,
+      correlationId,
+      data: emptyPageV2(),
+    });
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok && decoded.value.outcome === "ok") {
+      expect(decoded.value.data.brandSuggestions).toEqual([]);
+      expect(decoded.value.data.specificTypeFacet).toEqual([]);
+    }
   });
 
   it("rejects N-2 / unknown contract versions", () => {
@@ -131,9 +155,15 @@ describe("SearchPage v2 initial contract", () => {
       projectionEpoch: 1,
       supportEpoch: 1,
       correlationId,
-      data: { ...emptyPageV2(), nextCursor: "cursor", hasNextPage: false },
+      data: {
+        ...emptyPageV2(),
+        brandSuggestions: [],
+        specificTypeFacet: [],
+        nextCursor: "cursor",
+        hasNextPage: false,
+      },
     };
-    expect(SearchPageRpcOutcomeV2Schema.safeParse(sample).success).toBe(false);
+    expect(SearchPageRpcOutcomeSchema.safeParse(sample).success).toBe(false);
   });
 
   it("rejects unknown keys on v2 hit", () => {
@@ -270,8 +300,11 @@ describe("canonical tokenizer", () => {
 
 describe("strict search cursor", () => {
   const valid = {
-    v: 1 as const,
+    v: 2 as const,
     queryDigest: "0123456789abcdef",
+    intentKind: "text" as const,
+    typeSlug: null,
+    taxonomyVersion: 1,
     parserVersion: 1,
     indexVersion: 1,
     projectionEpoch: 1,
@@ -346,7 +379,9 @@ describe("classified FTS fallback", () => {
     const batch = vi.fn().mockResolvedValue([
       { results: [{ projection_epoch: 1, support_epoch: 1, active_slot: "a",
         index_version: 1, parser_version: 1, search_projection_epoch: 1,
-        search_write_generation: 1 }] },
+        search_write_generation: 1, taxonomy_version: 1 }] },
+      { results: [] },
+      { results: [] },
       { results: [] },
       { results: [] },
       { results: [{ n: 1_000_001 }] },
@@ -354,7 +389,6 @@ describe("classified FTS fallback", () => {
       { results: [{ n: 1_000_001 }] },
       { results: [] },
       { results: [{ n: 1_000_001 }] },
-      { results: [] },
     ]);
     const db = { prepare: vi.fn().mockReturnValue(statement), batch } as unknown as D1Database;
     const result = await createD1SearchCatalog(db).getSearchPageSnapshot({
@@ -416,6 +450,7 @@ function aggregateMeta(overrides: Record<string, unknown> = {}) {
   return {
     projection_epoch: 7,
     support_epoch: 8,
+    taxonomy_version: 1,
     active_slot: "a",
     index_version: 1,
     parser_version: 1,
@@ -432,6 +467,7 @@ function aggregateOffer() {
     brand: "Closin",
     specific_type: "filament",
     material_family: "PLA",
+    formulation_label: "PLA",
     color: null,
     diameter_mm: "1.75",
     mass_grams: 1000,
@@ -466,6 +502,8 @@ function selectorDb(input: {
   const hasFts = input.selectorError === undefined;
   const results = [
     { results: [input.meta ?? aggregateMeta()] },
+    { results: [] },
+    { results: [] },
     { results: [] },
     { results: [] },
     { results: [{ n: offerRows.length }] },
@@ -514,6 +552,7 @@ describe("active-slot selector fencing", () => {
         { results: [aggregateMeta()] },
         { results: [{ store_id: "closin", display_name: "x".repeat(513), support_state: "active" }] },
         { results: [] },
+        { results: [] },
       ]),
     } as unknown as D1Database;
     const result = await createD1SearchCatalog(db).getSearchPageSnapshot({
@@ -529,7 +568,7 @@ describe("active-slot selector fencing", () => {
       search_projection_epoch: 70, search_write_generation: 90,
     }) });
     const result = await createD1SearchCatalog(fake.db).getSearchPageSnapshot({
-      q: "pla",
+      q: "filamento",
       correlationId,
       evaluatedAt: new Date("2026-08-09T00:00:00.000Z"),
     });

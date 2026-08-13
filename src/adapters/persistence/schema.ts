@@ -13,6 +13,51 @@ export const projectionMeta = sqliteTable("projection_meta", {
   projectionEpoch: integer("projection_epoch").notNull(),
   supportEpoch: integer("support_epoch").notNull(),
   updatedAt: text("updated_at").notNull(),
+  taxonomyVersion: integer("taxonomy_version").notNull().default(1),
+});
+
+/** Reviewed Material Family records (Story 1.6). */
+export const materialFamilies = sqliteTable("material_families", {
+  familyId: text("family_id").primaryKey().notNull(),
+  slug: text("slug").notNull().unique(),
+  label: text("label").notNull(),
+  taxonomyVersion: integer("taxonomy_version").notNull(),
+  provenance: text("provenance").notNull(),
+});
+
+/** Formulation Specific Types — not product-kind filament|kit (Story 1.6). */
+export const specificTypes = sqliteTable("specific_types", {
+  specificTypeId: text("specific_type_id").primaryKey().notNull(),
+  familyId: text("family_id").notNull(),
+  slug: text("slug").notNull().unique(),
+  label: text("label").notNull(),
+  taxonomyVersion: integer("taxonomy_version").notNull(),
+  provenance: text("provenance").notNull(),
+});
+
+/** Filament Brand records — not Store ids (Story 1.6). */
+export const brands = sqliteTable("brands", {
+  brandId: text("brand_id").primaryKey().notNull(),
+  slug: text("slug").notNull().unique(),
+  label: text("label").notNull(),
+  taxonomyVersion: integer("taxonomy_version").notNull(),
+  provenance: text("provenance").notNull(),
+});
+
+/** Reviewed alternate/old slugs. Canonical slugs are never self-aliased. */
+export const taxonomyAliases = sqliteTable("taxonomy_aliases", {
+  aliasSlug: text("alias_slug").primaryKey().notNull(),
+  kind: text("kind").notNull(),
+  targetId: text("target_id").notNull(),
+  reviewed: integer("reviewed").notNull(),
+});
+
+/** Split/retired public slugs → HTTP 410. */
+export const taxonomyGone = sqliteTable("taxonomy_gone", {
+  goneSlug: text("gone_slug").notNull(),
+  kind: text("kind").notNull(),
+  taxonomyVersion: integer("taxonomy_version").notNull(),
+  reason: text("reason").notNull(),
 });
 
 /**
@@ -155,6 +200,9 @@ export const offers = sqliteTable(
     tombstoned: integer("tombstoned").notNull(),
     listingTitle: text("listing_title"),
     searchText: text("search_text").notNull(),
+    brandId: text("brand_id"),
+    materialFamilyId: text("material_family_id"),
+    formulationSpecificTypeId: text("formulation_specific_type_id"),
   },
   (t) => [
     uniqueIndex("offers_source_key_uidx").on(t.sourceKey),
@@ -200,6 +248,9 @@ export const stagedOffers = sqliteTable(
     appendPricePoint: integer("append_price_point").notNull(),
     listingTitle: text("listing_title"),
     searchText: text("search_text").notNull(),
+    brandId: text("brand_id"),
+    materialFamilyId: text("material_family_id"),
+    formulationSpecificTypeId: text("formulation_specific_type_id"),
   },
   (t) => [
     uniqueIndex("staged_offers_run_offer_uidx").on(t.runId, t.offerId),

@@ -4,7 +4,7 @@ import { SearchPageRpcOutcomeSchema, SEARCH_PAGE_CONTRACT_VERSION } from "../../
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-describe("SearchPage initial v2 contract", () => {
+describe("SearchPage current v3 contract", () => {
   const sampleOkV2 = {
     outcome: "ok" as const,
     contractVersion: SEARCH_PAGE_CONTRACT_VERSION,
@@ -16,6 +16,8 @@ describe("SearchPage initial v2 contract", () => {
       hits: [],
       totalCount: 0,
       materialFamilySuggestions: [],
+      brandSuggestions: [],
+      specificTypeFacet: [],
       storeSupport: [],
       nextCursor: null,
       hasNextPage: false,
@@ -28,7 +30,7 @@ describe("SearchPage initial v2 contract", () => {
     },
   };
 
-  it("decodes current envelope as N (v2)", () => {
+  it("decodes current envelope as N (v3)", () => {
     expect(SearchPageRpcOutcomeSchema.parse(sampleOkV2).outcome).toBe("ok");
   });
 

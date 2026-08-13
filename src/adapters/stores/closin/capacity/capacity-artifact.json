@@ -34,16 +34,16 @@
     "ad8ProofExecutedAt": "2026-08-08T18:30:00.000Z",
     "ad8ProofMethod": "worker capacity batch at 134 rows",
     "story14FtsBatchExtension": {
-      "description": "Measured publication batch preselects one active-slot plan, fences the claim to that slot, and uses only its delete/insert statements plus one generation bump; no inactive-table preparation or per-Offer FTS fan-out.",
+      "description": "Measured publication batch preselects one active-slot plan, fences the claim to that slot, and uses only its delete/insert statements plus one generation bump; no inactive-table preparation or per-Offer FTS fan-out. Story 1.6 adds three taxonomy ID binds per staged row plus taxonomy tokens in search_text.",
       "additionalStatementsFixed": 3,
       "additionalBindsFixed": 7,
       "measuredRows": 134,
       "measuredStatements": 147,
-      "measuredTotalBinds": 3553,
-      "measuredMaxBindsPerStatement": 26,
-      "measuredTotalSqlUtf8Bytes": 104295,
-      "measuredMaxSqlUtf8Bytes": 2508,
-      "measuredTotalBoundValueUtf8Bytes": 45630,
+      "measuredTotalBinds": 3955,
+      "measuredMaxBindsPerStatement": 29,
+      "measuredTotalSqlUtf8Bytes": 115189,
+      "measuredMaxSqlUtf8Bytes": 2816,
+      "measuredTotalBoundValueUtf8Bytes": 48846,
       "serializedStagedFixtureBytes": 101047,
       "canonicalSearchTextBytes": 2972,
       "measuredActualBatchDurationMs": 19,
@@ -52,7 +52,7 @@
       "remeasureRequiredBeforeActivation": true,
       "rollbackFailurePosition": 148,
       "rollbackRows": 134,
-      "note": "2026-08-09 local Miniflare/workerd measurement of the actual D1 batch. A deliberately failing statement 148 proved rollback after all 147 planned statements. Production canary must remeasure target-tier latency."
+      "note": "2026-08-13 local Miniflare/workerd remasure after Story 1.6 taxonomy columns/FTS tokens. Statement count stayed 147; binds rose by 3×134=402 (26→29 max per staged INSERT). A deliberately failing statement 148 still proves rollback. Production canary must remeasure target-tier latency."
     }
   },
   "workersDnsLimitation": "Cloudflare Workers fetch resolves origin DNS internally; userland cannot pin connections. URL host classification + fail-closed ambiguity are mandatory."

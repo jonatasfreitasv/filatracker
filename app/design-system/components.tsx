@@ -1,16 +1,26 @@
 import type { FormEvent, ReactNode } from "react";
 
+import type { BrandSuggestion, MaterialFamilySuggestion } from "../../src/contracts";
+
 type ShellProps = {
   children: ReactNode;
   /** When true, shell omits its search — page owns the primary search (Home). */
   hideShellSearch?: boolean;
   searchDefaultValue?: string;
+  materialFamilies?: MaterialFamilySuggestion[];
+  brands?: BrandSuggestion[];
+  currentFamilySlug?: string;
+  currentBrandSlug?: string;
 };
 
 export function Shell({
   children,
   hideShellSearch = false,
   searchDefaultValue = "",
+  materialFamilies = [],
+  brands = [],
+  currentFamilySlug,
+  currentBrandSlug,
 }: ShellProps) {
   return (
     <div className="ft-shell">
@@ -24,6 +34,12 @@ export function Shell({
               FilaTracker
             </a>
           </p>
+          <PrimaryNav
+            materialFamilies={materialFamilies}
+            brands={brands}
+            currentFamilySlug={currentFamilySlug}
+            currentBrandSlug={currentBrandSlug}
+          />
           {!hideShellSearch ? (
             <SearchControl defaultValue={searchDefaultValue} />
           ) : null}
@@ -38,6 +54,58 @@ export function Shell({
         </p>
       </footer>
     </div>
+  );
+}
+
+function PrimaryNav({
+  materialFamilies,
+  brands,
+  currentFamilySlug,
+  currentBrandSlug,
+}: {
+  materialFamilies: MaterialFamilySuggestion[];
+  brands: BrandSuggestion[];
+  currentFamilySlug?: string;
+  currentBrandSlug?: string;
+}) {
+  if (materialFamilies.length === 0 && brands.length === 0) return null;
+  return (
+    <nav className="ft-primary-nav" aria-label="Navegação principal">
+      {materialFamilies.length > 0 ? (
+        <details className="ft-nav-disclosure">
+          <summary>Materiais</summary>
+          <ul>
+            {materialFamilies.map((item) => (
+              <li key={item.id}>
+                <a
+                  href={`/materials/${item.slug}`}
+                  aria-current={item.slug === currentFamilySlug ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {brands.length > 0 ? (
+        <details className="ft-nav-disclosure">
+          <summary>Marcas</summary>
+          <ul>
+            {brands.map((item) => (
+              <li key={item.id}>
+                <a
+                  href={`/brands/${item.slug}`}
+                  aria-current={item.slug === currentBrandSlug ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </nav>
   );
 }
 

@@ -5,6 +5,7 @@ import {
   LoadingRows,
   SearchControl,
   Shell,
+  SuggestionChips,
 } from "../design-system";
 import {
   loadSearchPage,
@@ -56,9 +57,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     loaderData && "query" in loaderData ? (loaderData.query ?? "") : "";
   const navigation = useNavigation();
   const isLoading = navigation.state === "loading";
+  const pageData =
+    loaderData &&
+    "outcome" in loaderData &&
+    (loaderData.outcome.outcome === "ok" || loaderData.outcome.outcome === "degraded")
+      ? loaderData.outcome.data
+      : null;
 
   return (
-    <Shell hideShellSearch>
+    <Shell
+      hideShellSearch
+      materialFamilies={pageData?.materialFamilySuggestions}
+      brands={pageData?.brandSuggestions}
+    >
       <section className="ft-home-hero" aria-labelledby="home-title">
         <h1 id="home-title" className="ft-home-title">
           FilaTracker
@@ -72,6 +83,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <LoadingRows />
         ) : (
           <>
+            {pageData ? (
+              <SuggestionChips suggestions={pageData.materialFamilySuggestions} />
+            ) : null}
             {loaderData?.kind === "empty-home" ||
             loaderData?.kind === "no-match" ? (
               <EmptyState
